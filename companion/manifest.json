@@ -7,8 +7,8 @@
 	"description": "Monitor and control Starlink Business/Enterprise service lines, user terminals and routers via the Starlink Public API v2, with a safety-interlock arming system for high-consequence actions.",
 	"version": "0.0.0",
 	"license": "MIT",
-	"repository": "git+https://github.com/bitfocus/companion-module-starlink.git",
-	"bugs": "https://github.com/bitfocus/companion-module-starlink/issues",
+	"repository": "git+https://github.com/drjeffries/companion-module-starlink.git",
+	"bugs": "https://github.com/drjeffries/companion-module-starlink/issues",
 	"maintainers": [
 		{
 			"name": "David Jeffries",

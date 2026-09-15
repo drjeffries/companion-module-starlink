@@ -15,7 +15,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/bitfocus/companion-module-starlink.git"
+		"url": "git+https://github.com/drjeffries/companion-module-starlink.git"
 	},
 	"engines": {
 		"node": "^22.20"
