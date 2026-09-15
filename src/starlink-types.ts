@@ -179,3 +179,96 @@ export interface StarlinkTokenResponse {
 	expires_in: number
 	scope?: string
 }
+
+/**
+ * Types for the Starlink Telemetry Cache API - POST /public/v2/telemetry/query.
+ * Undocumented in the OpenAPI/Swagger spec; only described in the prose guides at
+ * https://starlink.readme.io/reference/post_public-v2-telemetry-query. Requires the
+ * "Device telemetry, View" permission on the service account, separate from the
+ * management-API permissions the rest of this module uses.
+ */
+export interface StarlinkEnterpriseCacheSearchRequest {
+	includeUserTerminals?: boolean | null
+	userTerminalIds?: string[] | null
+	includeRouters?: boolean | null
+	routerIds?: string[] | null
+}
+
+export interface StarlinkIpAllocationCacheData {
+	userTerminalId: string
+	timestamp: string
+	ipv4: string[] | null
+	ipv6Ue: string[] | null
+	ipv6Cpe: string[] | null
+}
+
+export interface StarlinkUserTerminalCacheData {
+	userTerminalId: string
+	timestamp: string
+	uptimeSeconds: number | null
+	softwareVersion: string | null
+	downlinkThroughputMbps: number | null
+	uplinkThroughputMbps: number | null
+	popPingDropRateAvg: number | null
+	popPingLatencyMsAvg: number | null
+	obstructionPercentTime: number | null
+	signalQuality: number | null
+	countryCode: string | null
+	inTerritorialWaters: boolean | null
+	h3CellId: string | null
+	secondsUntilSoftwareUpdateRebootPossible: number | null
+	alertSoftwareUpdateRebootPending: boolean | null
+	alertDataOverageRateLimited: boolean | null
+	alertEthernetSlowLink10: boolean | null
+	alertEthernetSlowLink100: boolean | null
+	alertPsuOtpThrottling: boolean | null
+	alertPopChange: boolean | null
+	alertActuatorMotorStuck: boolean | null
+	alertMastNotVertical: boolean | null
+	alertUnableToAlign: boolean | null
+	alertHighTimeObstruction: boolean | null
+	alertDisabledNoActiveServiceLine: boolean | null
+	alertDisabledTooFarFromServiceAddress: boolean | null
+	alertDisabledNoServiceInOcean: boolean | null
+	alertDisabledBlockedCountry: boolean | null
+	alertDisabledMovingTooFast: boolean | null
+	alertDisabledDataUsageExceededQuota: boolean | null
+	alertDisabledCellIsDisabled: boolean | null
+	alertDisabledRoamRestricted: boolean | null
+	alertDisabledUnknownLocation: boolean | null
+	alertDisabledAccountDisabled: boolean | null
+	alertDisabledUnsupportedSoftware: boolean | null
+	ipAllocations: StarlinkIpAllocationCacheData | null
+}
+
+export interface StarlinkRouterCacheData {
+	routerId: string
+	timestamp: string
+	uptimeSeconds: number | null
+	softwareVersion: string | null
+	hardwareVersion: string | null
+	isRepeater: boolean | null
+	hopsFromController: number | null
+	isBypassed: boolean | null
+	internetPingDropRate: number | null
+	internetPingLatencyMs: number | null
+	popPingDropRate: number | null
+	popPingLatencyMs: number | null
+	dishPingDropRate: number | null
+	dishPingLatencyMs: number | null
+	clients: number | null
+	clients2Ghz: number | null
+	clients5Ghz: number | null
+	clientsEthernet: number | null
+	wanRxBytes: number | null
+	wanTxBytes: number | null
+}
+
+export interface StarlinkEnterpriseCacheSearchResponse {
+	userTerminals: Record<string, StarlinkUserTerminalCacheData> | null
+	routers: Record<string, StarlinkRouterCacheData> | null
+}
+
+export interface StarlinkEnterpriseCacheSearchResponseServiceResponse extends StarlinkServiceResponse {
+	content: StarlinkEnterpriseCacheSearchResponse | null
+}

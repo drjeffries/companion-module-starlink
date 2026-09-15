@@ -1,9 +1,9 @@
 # Starlink
 
 Monitors and controls Starlink Business/Enterprise service lines, user terminals (dishes)
-and routers via the [Starlink Public API v2](https://starlink.com/api/public/swagger/index.html?urls.primaryName=V2),
-with a safety-interlock arming system so a stray button press during a live broadcast can't
-reboot the link or trigger a paid data top-up.
+and routers via the Starlink Public API v2, with a safety-interlock arming system so a
+stray button press during a live broadcast can't reboot the link or trigger a paid data
+top-up.
 
 ## Getting an API application
 
@@ -11,7 +11,12 @@ reboot the link or trigger a paid data top-up.
 2. Create an API application (Account → API keys / API Access) to get a **Client ID** and
    **Client Secret**. This module authenticates with the OIDC `client_credentials` grant -
    no user login flow is needed.
-3. Note the **Service Line Number** (`SL-XXXXXX-XXXXX-XX`), **User Terminal ID** and
+3. Grant the service account at least these permissions: **Account information (View)**,
+   **Service plan (View/Edit)**, **Device management (View)**, **Device command and
+   configuration (Edit)**, and **Device telemetry (View)**. The last one is required for
+   live latency/obstruction/signal/public-IP data (see below) - without it, those
+   variables/feedbacks simply stay `N/A` while everything else keeps working.
+4. Note the **Service Line Number** (`SL-XXXXXX-XXXXX-XX`), **User Terminal ID** and
    **Router ID** you want this connection to default to. You can find these on the admin
    portal, or run the "List Available Data Top-Up Products" action (or watch the log after
    connecting) to confirm the connection is authenticating correctly.
@@ -19,14 +24,15 @@ reboot the link or trigger a paid data top-up.
 ## Polling and rate limits
 
 Starlink API v2 allows **250 requests/minute per account**, shared across every integration
-using that account - not exclusive to this connection. This module makes about 5 requests
-per poll cycle. The **Telemetry Poll Interval** field defaults to 60 seconds, which uses a
-small fraction of that budget and leaves headroom for other tools. You can lower it, but
-Starlink's own docs recommend against polling this account/billing API at high frequency -
-if you need frequent, low-latency access, they recommend syncing to your own database
-instead. The bearer token endpoint has its own, stricter limit (1000 auths/15min per IP);
-this module caches and reuses tokens for their full 15-minute lifetime, so normal polling
-never comes close to that limit.
+using that account - not exclusive to this connection. This module makes about 6 requests
+per poll cycle (5 management-API calls plus 1 telemetry cache call). The **Telemetry Poll
+Interval** field defaults to 60 seconds, which uses a small fraction of that budget and
+leaves headroom for other tools. You can lower it, but Starlink's own docs recommend against
+polling the management API at high frequency, and the live telemetry values themselves are
+only produced a few times a minute on Starlink's side regardless of how often you poll - so
+going much faster than 60s buys little. The bearer token endpoint has its own, stricter
+limit (1000 auths/15min per IP); this module caches and reuses tokens for their full
+15-minute lifetime, so normal polling never comes close to that limit.
 
 ## Read-only by default
 
@@ -56,19 +62,25 @@ connection is **ARMED**:
    option (on by default): the first press only arms a pending confirmation, and the button
    must be pressed again within a few seconds to actually execute.
 
-## Real-time RF telemetry limitation
+## Live telemetry (latency, obstruction, signal, public IP, alerts)
 
-The Starlink **Public API v2** (the cloud/OIDC REST API this module talks to) is an
-account-management API - it does not expose live link telemetry such as ping latency,
-obstruction percentage, beam/signal quality, or the literal WAN IP address. Those only
-exist on the dish's own local, unauthenticated interface on the LAN, a different protocol
-entirely and out of scope for a cloud-credentialed module like this one - so this module
-does not surface variables or feedbacks for them.
+The Starlink **Public API v2** management endpoints (account/service-line/device info) do
+not expose live RF link telemetry. That data comes from a separate, related endpoint - the
+**Telemetry Cache API** - which this module also polls (alongside the management calls) to
+populate `latency_ms`, `obstruction_percent`, `signal_quality_percent`,
+`ping_drop_rate_percent`, `downlink_mbps`, `uplink_mbps`, `terminal_uptime`,
+`public_ip_address`, the router `router_*` variables, and the alert-driven feedbacks below.
 
-What this module *does* expose from the Public API: account info, service line activation
-state and nickname, dedicated public IP on/off (not the address itself), priority/standard
-data usage for the current billing cycle against the recurring allotment, and user
-terminal / router identity fields.
+This requires the **Device telemetry, View** permission on your service account (see
+"Getting an API application" above) and a configured **User Terminal / Dish ID** and/or
+**Router ID**. If the permission is missing, or no device ID is configured, these fields
+stay `N/A` and the alert feedbacks stay inactive - everything else in the module (account,
+service line, data usage) keeps working normally regardless.
+
+There is a separate, lower-level **local** dish API on the LAN (typically `192.168.100.1`,
+unauthenticated, a different protocol) used by tools like SpaceX's own diagnostic apps -
+this module does not use it, since the cloud Telemetry Cache API above already covers the
+same data for a remotely-deployed OB truck without needing LAN access to the dish.
 
 ## Variables
 
@@ -83,7 +95,19 @@ terminal / router identity fields.
 | `data_used_gb`, `data_used_standard_gb`, `data_cap_gb`, `data_used_percent` | Current billing cycle data usage |
 | `device_id`, `device_nickname`, `kit_serial_number`, `dish_serial_number` | User terminal identity |
 | `router_id`, `router_nickname` | Router identity |
+| `latency_ms`, `obstruction_percent`, `signal_quality_percent`, `ping_drop_rate_percent` | Live dish RF link telemetry |
+| `downlink_mbps`, `uplink_mbps`, `terminal_uptime`, `public_ip_address` | Live dish throughput/uptime/IP |
+| `alert_obstruction`, `alert_thermal`, `alert_pop_change`, `alert_software_update_pending`, `alert_data_overage`, `alert_alignment_issue` | Live dish alert flags (`YES`/`NO`/`N/A`) |
+| `router_uptime`, `router_internet_latency_ms`, `router_dish_latency_ms`, `router_clients` | Live router telemetry |
 | `connection_status`, `last_poll_time`, `last_error` | Poll diagnostics |
+
+## Feedbacks
+
+Alongside the safety/data-usage/service-status feedbacks, the live-telemetry set is:
+**High Latency Alert**, **Obstruction Alert**, **Thermal / Power Supply Alert**,
+**Point-of-Presence Change Alert**, **Data Overage Rate-Limited Alert**, and
+**Alignment / Mount Alert**. All of these need the "Device telemetry, View" permission and
+stay inactive without it.
 
 ## Actions
 
@@ -99,8 +123,8 @@ terminal / router identity fields.
 
 ## Presets
 
-The "Telemetry / Read-Only" section's status-display presets (Telemetry Display, Service
-Line Status, Data Usage, Account Info, Router Status) are **info only** - pressing them does
-nothing; their text and colors update automatically as the connection polls in the
-background. "List Top-Up Products (log)" is the one exception in that section: it does run
-a (read-only) action when pressed.
+The "Telemetry / Read-Only" section's status-display presets (Telemetry Display, Signal
+Health, Service Line Status, Data Usage, Public IP, Account Info, Router Status) are **info
+only** - pressing them does nothing; their text and colors update automatically as the
+connection polls in the background. "List Top-Up Products (log)" is the one exception in
+that section: it does run a (read-only) action when pressed.

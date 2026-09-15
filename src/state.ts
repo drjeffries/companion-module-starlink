@@ -2,12 +2,10 @@
  * Snapshot of the last successful (or failed) telemetry poll. Held on the instance and
  * read by variables.ts / feedbacks.ts so both stay in sync with a single fetch cycle.
  *
- * The Starlink PUBLIC API v2 (the cloud/OIDC REST API this module talks to) is an
- * account-management API - it does not expose live RF link telemetry (ping latency,
- * obstruction, beam/signal quality). Those only exist on the dish's own local,
- * unauthenticated interface on the LAN, a different protocol out of scope for this
- * cloud-credentialed module, so this state intentionally only tracks fields the API
- * actually returns.
+ * The `live*`/`alert*` fields come from the Starlink Telemetry Cache API
+ * (POST /public/v2/telemetry/query), which is undocumented in the OpenAPI spec and requires
+ * its own "Device telemetry, View" service-account permission - see api.ts. Everything else
+ * comes from the regular management API endpoints.
  */
 export interface TelemetryState {
 	pollOk: boolean
@@ -35,6 +33,28 @@ export interface TelemetryState {
 
 	routerId: string | null
 	routerNickname: string | null
+
+	// --- Live device telemetry (Telemetry Cache API) - user terminal ---
+	liveLatencyMs: number | null
+	liveObstructionPercent: number | null
+	liveSignalQualityPercent: number | null
+	livePingDropRatePercent: number | null
+	liveDownlinkMbps: number | null
+	liveUplinkMbps: number | null
+	liveUptimeSeconds: number | null
+	livePublicIpAddress: string | null
+	alertObstruction: boolean | null
+	alertThermal: boolean | null
+	alertPopChange: boolean | null
+	alertSoftwareUpdatePending: boolean | null
+	alertDataOverage: boolean | null
+	alertAlignmentIssue: boolean | null
+
+	// --- Live device telemetry (Telemetry Cache API) - router ---
+	routerUptimeSeconds: number | null
+	routerInternetLatencyMs: number | null
+	routerDishLatencyMs: number | null
+	routerClients: number | null
 }
 
 export function createInitialTelemetryState(): TelemetryState {
@@ -59,5 +79,23 @@ export function createInitialTelemetryState(): TelemetryState {
 		dishSerialNumber: null,
 		routerId: null,
 		routerNickname: null,
+		liveLatencyMs: null,
+		liveObstructionPercent: null,
+		liveSignalQualityPercent: null,
+		livePingDropRatePercent: null,
+		liveDownlinkMbps: null,
+		liveUplinkMbps: null,
+		liveUptimeSeconds: null,
+		livePublicIpAddress: null,
+		alertObstruction: null,
+		alertThermal: null,
+		alertPopChange: null,
+		alertSoftwareUpdatePending: null,
+		alertDataOverage: null,
+		alertAlignmentIssue: null,
+		routerUptimeSeconds: null,
+		routerInternetLatencyMs: null,
+		routerDishLatencyMs: null,
+		routerClients: null,
 	}
 }

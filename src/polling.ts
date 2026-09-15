@@ -7,6 +7,21 @@ function round2(n: number): number {
 	return Math.round(n * 100) / 100
 }
 
+function roundOrNull(n: number | null | undefined): number | null {
+	return n === null || n === undefined ? null : round2(n)
+}
+
+function percentOrNull(fraction: number | null | undefined): number | null {
+	return fraction === null || fraction === undefined ? null : round2(fraction * 100)
+}
+
+/** Combines several nullable alert flags: true if any is true, null if all are unknown, else false. */
+function anyAlert(...flags: (boolean | null | undefined)[]): boolean | null {
+	if (flags.some((f) => f === true)) return true
+	if (flags.every((f) => f === null || f === undefined)) return null
+	return false
+}
+
 /**
  * Sums the current billing cycle's recurring data-block allotment (in GB) for the plan cap,
  * used to compute the 80%/95% usage feedback thresholds. Returns null if the plan has no
@@ -96,12 +111,64 @@ export async function pollOnce(self: ModuleInstance): Promise<void> {
 		}
 	}
 
+	if (deviceId || routerId) {
+		try {
+			const cacheRes = await self.api.queryTelemetryCache({
+				includeUserTerminals: !!deviceId,
+				userTerminalIds: deviceId ? [deviceId] : undefined,
+				includeRouters: !!routerId,
+				routerIds: routerId ? [routerId] : undefined,
+			})
+
+			const ut = deviceId ? cacheRes.content?.userTerminals?.[deviceId] : undefined
+			telemetry.liveLatencyMs = roundOrNull(ut?.popPingLatencyMsAvg)
+			telemetry.liveObstructionPercent = roundOrNull(ut?.obstructionPercentTime)
+			telemetry.liveSignalQualityPercent = percentOrNull(ut?.signalQuality)
+			telemetry.livePingDropRatePercent = percentOrNull(ut?.popPingDropRateAvg)
+			telemetry.liveDownlinkMbps = roundOrNull(ut?.downlinkThroughputMbps)
+			telemetry.liveUplinkMbps = roundOrNull(ut?.uplinkThroughputMbps)
+			telemetry.liveUptimeSeconds = ut?.uptimeSeconds ?? null
+			telemetry.livePublicIpAddress = ut?.ipAllocations?.ipv4?.length ? ut.ipAllocations.ipv4.join(', ') : null
+			telemetry.alertObstruction = anyAlert(ut?.alertHighTimeObstruction)
+			telemetry.alertThermal = anyAlert(ut?.alertPsuOtpThrottling)
+			telemetry.alertPopChange = anyAlert(ut?.alertPopChange)
+			telemetry.alertSoftwareUpdatePending = anyAlert(ut?.alertSoftwareUpdateRebootPending)
+			telemetry.alertDataOverage = anyAlert(ut?.alertDataOverageRateLimited)
+			telemetry.alertAlignmentIssue = anyAlert(
+				ut?.alertMastNotVertical,
+				ut?.alertActuatorMotorStuck,
+				ut?.alertUnableToAlign,
+			)
+
+			const rt = routerId ? cacheRes.content?.routers?.[routerId] : undefined
+			telemetry.routerUptimeSeconds = rt?.uptimeSeconds ?? null
+			telemetry.routerInternetLatencyMs = roundOrNull(rt?.internetPingLatencyMs)
+			telemetry.routerDishLatencyMs = roundOrNull(rt?.dishPingLatencyMs)
+			telemetry.routerClients = rt?.clients ?? null
+		} catch (err) {
+			// A 403 here almost always means the service account is missing the "Device telemetry,
+			// View" permission - the rest of the poll (account/service-line/data usage) is unaffected.
+			errors.push(describeError('live telemetry', err))
+		}
+	}
+
 	telemetry.lastPollIso = new Date().toISOString()
 	telemetry.pollOk = errors.length === 0
 	telemetry.lastError = errors.length > 0 ? errors.join(' | ') : null
 
 	pushTelemetryVariables(self)
-	self.checkFeedbacks('data_usage_warning', 'data_usage_critical', 'terminal_status_ok', 'terminal_status_fault')
+	self.checkFeedbacks(
+		'data_usage_warning',
+		'data_usage_critical',
+		'terminal_status_ok',
+		'terminal_status_fault',
+		'high_latency_alert',
+		'obstruction_alert',
+		'thermal_alert',
+		'pop_change_alert',
+		'data_overage_alert',
+		'alignment_alert',
+	)
 
 	if (errors.length > 0) {
 		self.log('warn', `Telemetry poll completed with errors: ${telemetry.lastError}`)

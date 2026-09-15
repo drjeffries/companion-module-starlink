@@ -27,6 +27,26 @@ export type VariablesSchema = {
 	router_id: string
 	router_nickname: string
 
+	latency_ms: string
+	obstruction_percent: string
+	signal_quality_percent: string
+	ping_drop_rate_percent: string
+	downlink_mbps: string
+	uplink_mbps: string
+	terminal_uptime: string
+	public_ip_address: string
+	alert_obstruction: string
+	alert_thermal: string
+	alert_pop_change: string
+	alert_software_update_pending: string
+	alert_data_overage: string
+	alert_alignment_issue: string
+
+	router_uptime: string
+	router_internet_latency_ms: string
+	router_dish_latency_ms: string
+	router_clients: string
+
 	connection_status: string
 	last_poll_time: string
 	last_error: string
@@ -60,6 +80,26 @@ export function UpdateVariableDefinitions(self: ModuleInstance): void {
 		router_id: { name: 'Default router ID' },
 		router_nickname: { name: 'Router nickname' },
 
+		latency_ms: { name: 'Dish round-trip latency to Starlink PoP, ms (Telemetry API)' },
+		obstruction_percent: { name: 'Dish obstruction, % of time (Telemetry API)' },
+		signal_quality_percent: { name: 'Dish signal quality, % (Telemetry API)' },
+		ping_drop_rate_percent: { name: 'Dish ping drop rate to Starlink PoP, % (Telemetry API)' },
+		downlink_mbps: { name: 'Dish downlink throughput, Mbps (Telemetry API)' },
+		uplink_mbps: { name: 'Dish uplink throughput, Mbps (Telemetry API)' },
+		terminal_uptime: { name: 'Dish uptime since last reboot (Telemetry API)' },
+		public_ip_address: { name: 'Dish public IPv4 address(es) (Telemetry API)' },
+		alert_obstruction: { name: 'Alert: frequent obstruction detected (YES / NO)' },
+		alert_thermal: { name: 'Alert: power supply thermal throttling (YES / NO)' },
+		alert_pop_change: { name: 'Alert: Starlink point-of-presence changed - brief disconnect/IP change (YES / NO)' },
+		alert_software_update_pending: { name: 'Alert: software update reboot pending (YES / NO)' },
+		alert_data_overage: { name: 'Alert: rate-limited from data overage (YES / NO)' },
+		alert_alignment_issue: { name: 'Alert: mast/actuator/alignment issue (YES / NO)' },
+
+		router_uptime: { name: 'Router uptime since last reboot (Telemetry API)' },
+		router_internet_latency_ms: { name: 'Router-to-internet latency, ms (Telemetry API)' },
+		router_dish_latency_ms: { name: 'Router-to-dish latency, ms (Telemetry API)' },
+		router_clients: { name: 'Router connected client count (Telemetry API)' },
+
 		connection_status: { name: 'Last poll result (OK / ERROR)' },
 		last_poll_time: { name: 'Timestamp of last telemetry poll' },
 		last_error: { name: 'Last telemetry poll error, if any' },
@@ -73,6 +113,16 @@ function yesNo(value: boolean | null): string {
 
 function numOrNA(value: number | null, suffix = ''): string {
 	return value === null ? 'N/A' : `${value}${suffix}`
+}
+
+function uptimeOrNA(seconds: number | null): string {
+	if (seconds === null) return 'N/A'
+	const days = Math.floor(seconds / 86400)
+	const hours = Math.floor((seconds % 86400) / 3600)
+	const minutes = Math.floor((seconds % 3600) / 60)
+	if (days > 0) return `${days}d ${hours}h`
+	if (hours > 0) return `${hours}h ${minutes}m`
+	return `${minutes}m`
 }
 
 /** Pushes the latest self.telemetry snapshot into Companion variable values. Called after every poll. */
@@ -101,6 +151,26 @@ export function pushTelemetryVariables(self: ModuleInstance): void {
 
 		router_id: t.routerId ?? self.config.routerId ?? 'N/A',
 		router_nickname: t.routerNickname ?? 'N/A',
+
+		latency_ms: numOrNA(t.liveLatencyMs),
+		obstruction_percent: numOrNA(t.liveObstructionPercent, '%'),
+		signal_quality_percent: numOrNA(t.liveSignalQualityPercent, '%'),
+		ping_drop_rate_percent: numOrNA(t.livePingDropRatePercent, '%'),
+		downlink_mbps: numOrNA(t.liveDownlinkMbps),
+		uplink_mbps: numOrNA(t.liveUplinkMbps),
+		terminal_uptime: uptimeOrNA(t.liveUptimeSeconds),
+		public_ip_address: t.livePublicIpAddress ?? 'N/A',
+		alert_obstruction: yesNo(t.alertObstruction),
+		alert_thermal: yesNo(t.alertThermal),
+		alert_pop_change: yesNo(t.alertPopChange),
+		alert_software_update_pending: yesNo(t.alertSoftwareUpdatePending),
+		alert_data_overage: yesNo(t.alertDataOverage),
+		alert_alignment_issue: yesNo(t.alertAlignmentIssue),
+
+		router_uptime: uptimeOrNA(t.routerUptimeSeconds),
+		router_internet_latency_ms: numOrNA(t.routerInternetLatencyMs),
+		router_dish_latency_ms: numOrNA(t.routerDishLatencyMs),
+		router_clients: numOrNA(t.routerClients),
 
 		connection_status: t.pollOk ? 'OK' : 'ERROR',
 		last_poll_time: t.lastPollIso ?? 'N/A',

@@ -10,6 +10,7 @@ const WARN_YELLOW = 0xffcc00
 const CRITICAL_RED = 0xcc0000
 const OK_GREEN = 0x00aa00
 const CAUTION_ORANGE = 0x663300
+const ALERT_AMBER = 0xff9900
 
 export function UpdatePresets(self: ModuleInstance): void {
 	const structure: CompanionPresetSection<ModuleSchema>[] = [
@@ -42,7 +43,15 @@ export function UpdatePresets(self: ModuleInstance): void {
 					id: 'telemetry-info-group',
 					type: 'simple',
 					name: 'Status Displays (Info Only - No Action)',
-					presets: ['telemetry_display', 'service_line_status', 'data_usage_display', 'account_info', 'router_status'],
+					presets: [
+						'telemetry_display',
+						'signal_health',
+						'service_line_status',
+						'data_usage_display',
+						'public_ip_display',
+						'account_info',
+						'router_status',
+					],
 				},
 				{
 					id: 'telemetry-utility-group',
@@ -170,7 +179,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 		type: 'simple',
 		name: 'Telemetry Display (Info Only)',
 		style: {
-			text: '$(starlink:service_line_nickname)\nData $(starlink:data_used_gb)GB ($(starlink:data_used_percent))\nActive: $(starlink:service_line_active)',
+			text: '$(starlink:service_line_nickname)\nData $(starlink:data_used_gb)GB ($(starlink:data_used_percent))\nLatency $(starlink:latency_ms)ms',
 			size: '14',
 			color: WHITE,
 			bgcolor: BLACK,
@@ -190,6 +199,32 @@ export function UpdatePresets(self: ModuleInstance): void {
 				style: { bgcolor: CRITICAL_RED, color: WHITE },
 			},
 			{ feedbackId: 'terminal_status_fault', options: {}, style: { bgcolor: CRITICAL_RED, color: WHITE } },
+		],
+	}
+
+	presets['signal_health'] = {
+		type: 'simple',
+		name: 'Signal Health (Info Only)',
+		style: {
+			text: 'Latency $(starlink:latency_ms)ms\nObstruction $(starlink:obstruction_percent)\nSignal $(starlink:signal_quality_percent)',
+			size: '14',
+			color: WHITE,
+			bgcolor: BLACK,
+			show_topbar: false,
+		},
+		// Info only - no press action. Values update automatically from the telemetry poll.
+		// Requires the "Device telemetry, View" permission on the service account - see HELP.
+		steps: [{ down: [], up: [] }],
+		feedbacks: [
+			{
+				feedbackId: 'high_latency_alert',
+				options: { thresholdMs: 100 },
+				style: { bgcolor: ALERT_AMBER, color: BLACK },
+			},
+			{ feedbackId: 'obstruction_alert', options: {}, style: { bgcolor: ALERT_AMBER, color: BLACK } },
+			{ feedbackId: 'pop_change_alert', options: {}, style: { bgcolor: ALERT_AMBER, color: BLACK } },
+			{ feedbackId: 'alignment_alert', options: {}, style: { bgcolor: CRITICAL_RED, color: WHITE } },
+			{ feedbackId: 'thermal_alert', options: {}, style: { bgcolor: CRITICAL_RED, color: WHITE } },
 		],
 	}
 
@@ -234,7 +269,24 @@ export function UpdatePresets(self: ModuleInstance): void {
 				options: { thresholdPercent: 95 },
 				style: { bgcolor: CRITICAL_RED, color: WHITE },
 			},
+			{ feedbackId: 'data_overage_alert', options: {}, style: { bgcolor: CRITICAL_RED, color: WHITE } },
 		],
+	}
+
+	presets['public_ip_display'] = {
+		type: 'simple',
+		name: 'Public IP (Info Only)',
+		style: {
+			text: 'Public IP\n$(starlink:public_ip_address)\nDedicated: $(starlink:public_ip_enabled)',
+			size: '14',
+			color: WHITE,
+			bgcolor: BLACK,
+			show_topbar: false,
+		},
+		// Info only - no press action. The address comes from the Telemetry API and requires the
+		// "Device telemetry, View" permission on the service account - see HELP.
+		steps: [{ down: [], up: [] }],
+		feedbacks: [{ feedbackId: 'pop_change_alert', options: {}, style: { bgcolor: ALERT_AMBER, color: BLACK } }],
 	}
 
 	presets['account_info'] = {
@@ -256,7 +308,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 		type: 'simple',
 		name: 'Router Status (Info Only)',
 		style: {
-			text: 'Router\n$(starlink:router_nickname)\n$(starlink:router_id)',
+			text: '$(starlink:router_nickname)\nClients $(starlink:router_clients)\nLatency $(starlink:router_dish_latency_ms)ms',
 			size: '14',
 			color: WHITE,
 			bgcolor: BLACK,

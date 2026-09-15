@@ -3,6 +3,8 @@ import type {
 	StarlinkAccountResponseV2ServiceResponse,
 	StarlinkAddDataBlockRequest,
 	StarlinkDataProductsResponse,
+	StarlinkEnterpriseCacheSearchRequest,
+	StarlinkEnterpriseCacheSearchResponseServiceResponse,
 	StarlinkQueryDataUsageRequest,
 	StarlinkServiceLineDataUsageForBillingCyclesPaginatedServiceResponse,
 	StarlinkServiceLineResponseServiceResponse,
@@ -194,6 +196,19 @@ export class StarlinkApiClient {
 
 	async listDataProducts(): Promise<StarlinkDataProductsResponse> {
 		return this.request('GET', '/public/v2/products')
+	}
+
+	/**
+	 * Latest cached device health telemetry (latency, obstruction, signal quality, throughput,
+	 * public IP, alert flags). Undocumented in the OpenAPI spec - see starlink-types.ts. Requires
+	 * the "Device telemetry, View" permission on the service account, separate from the
+	 * management-API permissions the rest of this client uses; a 403 here means that permission
+	 * is missing, not that the connection is broken.
+	 */
+	async queryTelemetryCache(
+		req: StarlinkEnterpriseCacheSearchRequest,
+	): Promise<StarlinkEnterpriseCacheSearchResponseServiceResponse> {
+		return this.request('POST', '/public/v2/telemetry/query', req)
 	}
 
 	// --- Write operations. Callers (actions.ts) are responsible for the enable-write-actions

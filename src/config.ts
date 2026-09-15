@@ -23,7 +23,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			width: 12,
 			label: 'Authentication',
 			value:
-				"Create an API application under Account &gt; API keys on the Starlink Business portal to obtain a Client ID and Client Secret (OIDC client_credentials grant). These credentials are stored by Companion in this connection's configuration and are never logged by this module.",
+				"Create an API application under Account &gt; API keys on the Starlink Business portal to obtain a Client ID and Client Secret (OIDC client_credentials grant). These credentials are stored by Companion in this connection's configuration and are never logged by this module. Grant the service account, at minimum: Account information (View), Service plan (View/Edit), Device management (View), Device command and configuration (Edit), and Device telemetry (View) - the last one is required for live latency/obstruction/signal/public-IP data; without it those variables/feedbacks just stay N/A.",
 		},
 		{
 			type: 'textinput',
@@ -77,9 +77,9 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			min: 2,
 			max: 3600,
 			tooltip:
-				'Starlink API v2 rate limit: 250 requests/minute per account, shared across every integration using that account - this module makes ~5 requests per poll. 60s is a conservative default with headroom to spare; you can lower it, but Starlink itself recommends syncing to your own database rather than polling this account/billing API frequently, since it is not real-time RF telemetry.',
+				"Starlink API v2 rate limit: 250 requests/minute per account, shared across every integration using that account - this module makes ~6 requests per poll (5 management-API calls plus 1 telemetry cache call). 60s is a conservative default with headroom to spare; you can lower it, but Starlink itself recommends syncing to your own database rather than high-frequency polling of the management API, and the live telemetry values only refresh a few times a minute on Starlink's side regardless of how often you poll.",
 			description:
-				'Starlink API v2 allows 250 requests/minute per account (shared with any other integration on the account); this module uses ~5 requests per poll. Lower this if you want fresher data, but note Starlink recommends against high-frequency polling of this account-management API.',
+				'Starlink API v2 allows 250 requests/minute per account (shared with any other integration on the account); this module uses ~6 requests per poll. Lower this if you want fresher data, but note Starlink recommends against high-frequency polling of the management API.',
 		},
 		{
 			type: 'number',
