@@ -48,11 +48,15 @@ Requires the service account to have the "Device telemetry, View" permission (se
 - [ ] Without the permission (or with it revoked): these fields fall back to `N/A`/inactive, and the rest of the connection (account, service line, data usage) keeps working - only a "live telemetry" warning appears in the log, not a hard connection failure
 - [ ] `High Latency Alert`, `Obstruction Alert`, `Thermal / Power Supply Alert`, `Point-of-Presence Change Alert`, `Data Overage Rate-Limited Alert`, `Alignment / Mount Alert` feedbacks trigger correctly when the corresponding condition is real (hard to force artificially - at minimum confirm they stay false/inactive under normal healthy conditions)
 
-## Discovery actions
+## Discovery actions and config dropdowns
 
 - [ ] `List Account Service Lines (log only)` logs every service line's number/nickname/active status
 - [ ] `List User Terminals & Routers (log only)` logs every terminal's ID plus any bonded router IDs
 - [ ] Both handle a zero-result account gracefully (logs "No ... found", doesn't error)
+- [ ] On a **new** connection (never opened config since creation): after saving with just Client ID/Secret, reopening the config panel a few seconds later shows real choices (not just "(none)") in the three dropdown fields
+- [ ] Selecting a dropdown value and saving actually sets that field (equivalent to typing it into a text field before)
+- [ ] "Custom value" in a dropdown still accepts a manually-typed ID (covers a device added after the last refresh)
+- [ ] Pressing `List Account Service Lines` / `List User Terminals & Routers` refreshes the dropdown choices (verify by reopening the config panel after pressing)
 
 ## Presets
 

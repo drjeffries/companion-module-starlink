@@ -29,12 +29,13 @@ top-up.
    configuration (Edit)**, and **Device telemetry (View)**. The last one is required for
    live latency/obstruction/signal/public-IP data (see below) - without it, those
    variables/feedbacks simply stay `N/A` while everything else keeps working.
-4. Save the connection with just Client ID/Secret filled in, then find the **Service Line
-   Number** (`SL-XXXXXX-XXXXX-XX`), **User Terminal ID** and **Router ID** you want this
-   connection to default to by adding a button with the **"List Account Service Lines (log
-   only)"** and **"List User Terminals & Routers (log only)"** actions (or drag in their
-   ready-made presets from "Read-Only Utilities") and pressing them once - the IDs show up
-   in the Companion log. You can also find them on the Starlink Business admin portal.
+4. Save the connection with just Client ID/Secret filled in. A few seconds later, reopen
+   this panel: **Default Service Line Number**, **Default User Terminal / Dish ID**, and
+   **Default Router ID** are dropdowns pulled live from your account - pick from the list,
+   or choose "Custom value" to type an ID directly. If a dropdown still only shows
+   "(none)", press the **"List Account Service Lines (log only)"** / **"List User Terminals
+   & Routers (log only)"** actions (also available as ready-made presets under "Read-Only
+   Utilities") to refresh it and log full details, then reopen this panel again.
 
 ## Polling and rate limits
 

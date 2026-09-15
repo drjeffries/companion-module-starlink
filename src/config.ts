@@ -1,4 +1,5 @@
 import type { SomeCompanionConfigField } from '@companion-module/base'
+import type ModuleInstance from './main.js'
 
 export type ModuleConfig = {
 	clientId: string
@@ -15,7 +16,7 @@ export type ModuleSecrets = {
 	clientSecret: string
 }
 
-export function GetConfigFields(): SomeCompanionConfigField[] {
+export function GetConfigFields(self: ModuleInstance): SomeCompanionConfigField[] {
 	return [
 		{
 			type: 'static-text',
@@ -53,34 +54,39 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			width: 12,
 			label: 'Default Targets',
 			value:
-				'Defaults used by actions/variables/presets when a button does not override them. To find the exact values for your account: save this connection with just Client ID/Secret filled in first, then add a button using this module\'s "List Account Service Lines (log only)" and "List User Terminals & Routers (log only)" actions (or drag in their ready-made presets from "Read-Only Utilities"). Press them once and check the Companion log (or your Starlink Business admin portal) for the IDs below.',
+				'Defaults used by actions/variables/presets when a button does not override them. These dropdowns are populated automatically from your account a few seconds after this connection first authenticates - if you\'re setting this up for the first time, save once with just Client ID/Secret filled in, then reopen this panel. You can also pick "Custom value" in a dropdown to type an ID directly, or press the "List Account Service Lines" / "List User Terminals & Routers" actions (also available as ready-made presets) at any time to refresh this list and log full details.',
 		},
 		{
-			type: 'textinput',
+			type: 'dropdown',
 			id: 'serviceLineNumber',
 			label: 'Default Service Line Number',
 			width: 6,
-			default: '',
-			tooltip:
-				'Format SL-XXXXXX-XXXXX-XX. Find it by running the "List Account Service Lines (log only)" action once connected and checking the Companion log, or on the Starlink Business admin portal.',
+			choices: self.knownServiceLines,
+			default: self.config?.serviceLineNumber ?? '',
+			allowCustom: true,
+			tooltip: 'Format SL-XXXXXX-XXXXX-XX. Populated from your account - see "Default Targets" above.',
 		},
 		{
-			type: 'textinput',
+			type: 'dropdown',
 			id: 'deviceId',
 			label: 'Default User Terminal / Dish ID',
 			width: 6,
-			default: '',
+			choices: self.knownUserTerminals,
+			default: self.config?.deviceId ?? '',
+			allowCustom: true,
 			tooltip:
-				'The User Terminal ID (not the kit serial number printed on the box, or the dish serial number on the dish itself). Find it by running the "List User Terminals & Routers (log only)" action once connected and checking the Companion log, or on the Starlink Business admin portal.',
+				'The User Terminal ID (not the kit serial number printed on the box, or the dish serial number on the dish itself). Populated from your account - see "Default Targets" above.',
 		},
 		{
-			type: 'textinput',
+			type: 'dropdown',
 			id: 'routerId',
 			label: 'Default Router ID',
 			width: 6,
-			default: '',
+			choices: self.knownRouters,
+			default: self.config?.routerId ?? '',
+			allowCustom: true,
 			tooltip:
-				'Find it by running the "List User Terminals & Routers (log only)" action once connected - each terminal in the log lists its bonded router(s) and their Router ID - or on the Starlink Business admin portal. Leave blank if this dish has no WiFi router bonded to it.',
+				'Populated from your account - see "Default Targets" above. Leave as "(none)" if this dish has no WiFi router bonded to it.',
 		},
 		{
 			type: 'number',

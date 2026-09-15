@@ -1,4 +1,9 @@
-import { InstanceBase, InstanceStatus, type SomeCompanionConfigField } from '@companion-module/base'
+import {
+	InstanceBase,
+	InstanceStatus,
+	type DropdownChoice,
+	type SomeCompanionConfigField,
+} from '@companion-module/base'
 import { GetConfigFields, type ModuleConfig, type ModuleSecrets } from './config.js'
 import { UpdateVariableDefinitions, type VariablesSchema, pushConfigVariables } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
@@ -9,6 +14,7 @@ import { StarlinkApiClient } from './api.js'
 import { SafetyInterlock, ConfirmGate } from './interlock.js'
 import { createInitialTelemetryState, type TelemetryState } from './state.js'
 import { startPolling, stopPolling } from './polling.js'
+import { refreshDeviceLists } from './discovery.js'
 
 export type ModuleSchema = {
 	config: ModuleConfig
@@ -29,6 +35,12 @@ export default class ModuleInstance extends InstanceBase<ModuleSchema> {
 	readonly confirmGate: ConfirmGate
 	readonly telemetry: TelemetryState = createInitialTelemetryState()
 	pollTimer: ReturnType<typeof setInterval> | null = null
+
+	// Cached choices for the Default Service Line / Terminal / Router config dropdowns,
+	// populated by discovery.ts. Empty until the first successful fetch after init().
+	knownServiceLines: DropdownChoice[] = [{ id: '', label: '(none)' }]
+	knownUserTerminals: DropdownChoice[] = [{ id: '', label: '(none)' }]
+	knownRouters: DropdownChoice[] = [{ id: '', label: '(none)' }]
 
 	constructor(internal: unknown) {
 		super(internal)
@@ -60,6 +72,7 @@ export default class ModuleInstance extends InstanceBase<ModuleSchema> {
 		}
 
 		startPolling(this)
+		void refreshDeviceLists(this)
 	}
 
 	async destroy(): Promise<void> {
@@ -82,10 +95,11 @@ export default class ModuleInstance extends InstanceBase<ModuleSchema> {
 
 		this.updateStatus(InstanceStatus.Connecting)
 		startPolling(this)
+		void refreshDeviceLists(this)
 	}
 
 	getConfigFields(): SomeCompanionConfigField[] {
-		return GetConfigFields()
+		return GetConfigFields(this)
 	}
 
 	updateActions(): void {
