@@ -9,7 +9,8 @@ import type ModuleInstance from './main.js'
  */
 export class SafetyInterlock {
 	private armed = false
-	private armedUntilMs = 0
+	/** null while armed means "no auto-disarm timer" (armed indefinitely until manually disarmed). */
+	private armedUntilMs: number | null = 0
 	private disarmTimer: NodeJS.Timeout | null = null
 	private tickTimer: NodeJS.Timeout | null = null
 	private blinkOn = false
@@ -25,27 +26,34 @@ export class SafetyInterlock {
 		return this.blinkOn
 	}
 
-	secondsRemaining(): number {
+	/** null means armed with no auto-disarm timer (indefinite); 0 while disarmed. */
+	secondsRemaining(): number | null {
 		if (!this.armed) return 0
+		if (this.armedUntilMs === null) return null
 		return Math.max(0, Math.ceil((this.armedUntilMs - Date.now()) / 1000))
 	}
 
-	arm(seconds: number): void {
+	/** Pass `seconds: null` to arm indefinitely, with no auto-disarm timer. */
+	arm(seconds: number | null): void {
 		this.armed = true
-		this.armedUntilMs = Date.now() + seconds * 1000
+		this.armedUntilMs = seconds === null ? null : Date.now() + seconds * 1000
 		this.clearTimers()
 
-		this.disarmTimer = setTimeout(() => this.disarm('auto-disarm timeout elapsed'), seconds * 1000)
-		// Drives both the countdown variable and the flashing ARMED feedback while armed.
+		if (seconds !== null) {
+			this.disarmTimer = setTimeout(() => this.disarm('auto-disarm timeout elapsed'), seconds * 1000)
+		}
+		// Drives the flashing ARMED feedback (and the countdown variable, when there is one) while armed.
 		this.tickTimer = setInterval(() => {
 			this.blinkOn = !this.blinkOn
-			this.self.setVariableValues({ arm_seconds_remaining: String(this.secondsRemaining()) })
+			this.self.setVariableValues({ arm_seconds_remaining: this.formatSecondsRemaining() })
 			this.self.checkFeedbacks('armed_indicator')
 		}, 500)
 
 		this.self.log(
 			'warn',
-			`SAFETY INTERLOCK ARMED for ${seconds}s - high-consequence actions will be accepted until disarmed.`,
+			seconds === null
+				? 'SAFETY INTERLOCK ARMED with no auto-disarm timer - high-consequence actions will be accepted until manually disarmed.'
+				: `SAFETY INTERLOCK ARMED for ${seconds}s - high-consequence actions will be accepted until disarmed.`,
 		)
 		this.pushState()
 	}
@@ -59,7 +67,8 @@ export class SafetyInterlock {
 		this.pushState()
 	}
 
-	toggle(seconds: number): void {
+	/** Pass `seconds: null` to arm indefinitely when toggling from disarmed to armed. */
+	toggle(seconds: number | null): void {
 		if (this.armed) {
 			this.disarm('toggled off')
 		} else {
@@ -78,10 +87,15 @@ export class SafetyInterlock {
 		}
 	}
 
+	private formatSecondsRemaining(): string {
+		const remaining = this.secondsRemaining()
+		return remaining === null ? 'no timer' : String(remaining)
+	}
+
 	private pushState(): void {
 		this.self.setVariableValues({
 			arm_status: this.armed ? 'ARMED' : 'DISARMED',
-			arm_seconds_remaining: String(this.secondsRemaining()),
+			arm_seconds_remaining: this.formatSecondsRemaining(),
 		})
 		this.self.checkFeedbacks('armed_indicator')
 	}

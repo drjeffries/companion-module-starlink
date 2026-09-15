@@ -101,13 +101,7 @@ export async function pollOnce(self: ModuleInstance): Promise<void> {
 	telemetry.lastError = errors.length > 0 ? errors.join(' | ') : null
 
 	pushTelemetryVariables(self)
-	self.checkFeedbacks(
-		'data_usage_warning',
-		'data_usage_critical',
-		'terminal_status_ok',
-		'terminal_status_fault',
-		'high_latency_alert',
-	)
+	self.checkFeedbacks('data_usage_warning', 'data_usage_critical', 'terminal_status_ok', 'terminal_status_fault')
 
 	if (errors.length > 0) {
 		self.log('warn', `Telemetry poll completed with errors: ${telemetry.lastError}`)

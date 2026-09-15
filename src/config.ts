@@ -73,9 +73,13 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			id: 'pollIntervalSeconds',
 			label: 'Telemetry Poll Interval (seconds)',
 			width: 6,
-			default: 5,
+			default: 60,
 			min: 2,
 			max: 3600,
+			tooltip:
+				'Starlink API v2 rate limit: 250 requests/minute per account, shared across every integration using that account - this module makes ~5 requests per poll. 60s is a conservative default with headroom to spare; you can lower it, but Starlink itself recommends syncing to your own database rather than polling this account/billing API frequently, since it is not real-time RF telemetry.',
+			description:
+				'Starlink API v2 allows 250 requests/minute per account (shared with any other integration on the account); this module uses ~5 requests per poll. Lower this if you want fresher data, but note Starlink recommends against high-frequency polling of this account-management API.',
 		},
 		{
 			type: 'number',

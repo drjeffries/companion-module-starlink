@@ -22,7 +22,9 @@ export function UpdatePresets(self: ModuleInstance): void {
 		},
 		{
 			id: 'write-actions',
-			name: 'Write Actions (require ARMED + confirmation)',
+			name: 'Write Actions (require ARMED)',
+			description:
+				'These only execute while the connection is ARMED (see Safety Interlock above) - a press while DISARMED is refused and logged.',
 			definitions: [
 				{
 					id: 'write-group',
@@ -37,17 +39,16 @@ export function UpdatePresets(self: ModuleInstance): void {
 			name: 'Telemetry / Read-Only',
 			definitions: [
 				{
-					id: 'telemetry-group',
+					id: 'telemetry-info-group',
 					type: 'simple',
-					name: 'Status Displays',
-					presets: [
-						'telemetry_display',
-						'service_line_status',
-						'data_usage_display',
-						'account_info',
-						'router_status',
-						'list_topup_products',
-					],
+					name: 'Status Displays (Info Only - No Action)',
+					presets: ['telemetry_display', 'service_line_status', 'data_usage_display', 'account_info', 'router_status'],
+				},
+				{
+					id: 'telemetry-utility-group',
+					type: 'simple',
+					name: 'Read-Only Utilities',
+					presets: ['list_topup_products'],
 				},
 			],
 		},
@@ -59,13 +60,13 @@ export function UpdatePresets(self: ModuleInstance): void {
 		type: 'simple',
 		name: 'Master Safety Arm Switch',
 		style: {
-			text: 'SAFETY\n$(starlink:arm_status)\n$(starlink:arm_seconds_remaining)s',
+			text: 'SAFETY\n$(starlink:arm_status)\n$(starlink:arm_seconds_remaining)',
 			size: '14',
 			color: WHITE,
 			bgcolor: DARK_GREY,
 			show_topbar: false,
 		},
-		steps: [{ down: [{ actionId: 'arm_toggle', options: {} }], up: [] }],
+		steps: [{ down: [{ actionId: 'arm_toggle', options: { durationSeconds: 0, noAutoDisarm: false } }], up: [] }],
 		feedbacks: [
 			{
 				feedbackId: 'armed_indicator',
@@ -93,13 +94,12 @@ export function UpdatePresets(self: ModuleInstance): void {
 		type: 'simple',
 		name: 'Instant 50GB Top-Up',
 		style: {
-			text: 'TOP-UP\n50GB\n(hold to arm first)',
+			text: 'TOP-UP\n50GB\n(ARM first)',
 			size: '14',
 			color: WHITE,
 			bgcolor: CAUTION_ORANGE,
 			show_topbar: false,
 		},
-		options: {},
 		steps: [
 			{
 				// Replace productId with the real 50GB top-up Product ID for this account -
@@ -111,7 +111,6 @@ export function UpdatePresets(self: ModuleInstance): void {
 							serviceLineNumber: '',
 							productId: 'REPLACE_WITH_50GB_TOPUP_PRODUCT_ID',
 							count: 1,
-							confirm: true,
 						},
 					},
 				],
@@ -131,13 +130,13 @@ export function UpdatePresets(self: ModuleInstance): void {
 		type: 'simple',
 		name: 'Panic Reboot Dish',
 		style: {
-			text: 'REBOOT\nDISH\n(press twice)',
+			text: 'REBOOT\nDISH\n(ARM first)',
 			size: '14',
 			color: WHITE,
 			bgcolor: CAUTION_ORANGE,
 			show_topbar: false,
 		},
-		steps: [{ down: [{ actionId: 'reboot_dish', options: { deviceId: '', confirm: true } }], up: [] }],
+		steps: [{ down: [{ actionId: 'reboot_dish', options: { deviceId: '' } }], up: [] }],
 		feedbacks: [
 			{
 				feedbackId: 'armed_indicator',
@@ -151,13 +150,13 @@ export function UpdatePresets(self: ModuleInstance): void {
 		type: 'simple',
 		name: 'Panic Reboot Router',
 		style: {
-			text: 'REBOOT\nROUTER\n(press twice)',
+			text: 'REBOOT\nROUTER\n(ARM first)',
 			size: '14',
 			color: WHITE,
 			bgcolor: CAUTION_ORANGE,
 			show_topbar: false,
 		},
-		steps: [{ down: [{ actionId: 'reboot_router', options: { routerId: '', confirm: true } }], up: [] }],
+		steps: [{ down: [{ actionId: 'reboot_router', options: { routerId: '' } }], up: [] }],
 		feedbacks: [
 			{
 				feedbackId: 'armed_indicator',
@@ -169,15 +168,16 @@ export function UpdatePresets(self: ModuleInstance): void {
 
 	presets['telemetry_display'] = {
 		type: 'simple',
-		name: 'Telemetry Display',
+		name: 'Telemetry Display (Info Only)',
 		style: {
-			text: '$(starlink:service_line_nickname)\nData $(starlink:data_used_gb)GB ($(starlink:data_used_percent))\nLatency $(starlink:latency_ms)ms',
+			text: '$(starlink:service_line_nickname)\nData $(starlink:data_used_gb)GB ($(starlink:data_used_percent))\nActive: $(starlink:service_line_active)',
 			size: '14',
 			color: WHITE,
 			bgcolor: BLACK,
 			show_topbar: false,
 		},
-		steps: [{ down: [{ actionId: 'refresh_status', options: {} }], up: [] }],
+		// Info only - no press action. Values update automatically from the telemetry poll.
+		steps: [{ down: [], up: [] }],
 		feedbacks: [
 			{
 				feedbackId: 'data_usage_warning',
@@ -195,7 +195,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 
 	presets['service_line_status'] = {
 		type: 'simple',
-		name: 'Service Line Status',
+		name: 'Service Line Status (Info Only)',
 		style: {
 			text: '$(starlink:service_line_number)\n$(starlink:service_line_nickname)\nActive: $(starlink:service_line_active)',
 			size: '14',
@@ -203,7 +203,8 @@ export function UpdatePresets(self: ModuleInstance): void {
 			bgcolor: BLACK,
 			show_topbar: false,
 		},
-		steps: [{ down: [{ actionId: 'refresh_status', options: {} }], up: [] }],
+		// Info only - no press action. Values update automatically from the telemetry poll.
+		steps: [{ down: [], up: [] }],
 		feedbacks: [
 			{ feedbackId: 'terminal_status_ok', options: {}, style: { bgcolor: OK_GREEN, color: WHITE } },
 			{ feedbackId: 'terminal_status_fault', options: {}, style: { bgcolor: CRITICAL_RED, color: WHITE } },
@@ -212,7 +213,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 
 	presets['data_usage_display'] = {
 		type: 'simple',
-		name: 'Data Usage',
+		name: 'Data Usage (Info Only)',
 		style: {
 			text: 'Priority: $(starlink:data_used_gb)GB\nCap: $(starlink:data_cap_gb)GB\n$(starlink:data_used_percent)',
 			size: '14',
@@ -220,7 +221,8 @@ export function UpdatePresets(self: ModuleInstance): void {
 			bgcolor: BLACK,
 			show_topbar: false,
 		},
-		steps: [{ down: [{ actionId: 'refresh_status', options: {} }], up: [] }],
+		// Info only - no press action. Values update automatically from the telemetry poll.
+		steps: [{ down: [], up: [] }],
 		feedbacks: [
 			{
 				feedbackId: 'data_usage_warning',
@@ -237,7 +239,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 
 	presets['account_info'] = {
 		type: 'simple',
-		name: 'Account Info',
+		name: 'Account Info (Info Only)',
 		style: {
 			text: '$(starlink:account_name)\n$(starlink:account_number)\n$(starlink:region_code)',
 			size: '14',
@@ -245,13 +247,14 @@ export function UpdatePresets(self: ModuleInstance): void {
 			bgcolor: BLACK,
 			show_topbar: false,
 		},
-		steps: [{ down: [{ actionId: 'refresh_status', options: {} }], up: [] }],
+		// Info only - no press action. Values update automatically from the telemetry poll.
+		steps: [{ down: [], up: [] }],
 		feedbacks: [],
 	}
 
 	presets['router_status'] = {
 		type: 'simple',
-		name: 'Router Status',
+		name: 'Router Status (Info Only)',
 		style: {
 			text: 'Router\n$(starlink:router_nickname)\n$(starlink:router_id)',
 			size: '14',
@@ -259,7 +262,8 @@ export function UpdatePresets(self: ModuleInstance): void {
 			bgcolor: BLACK,
 			show_topbar: false,
 		},
-		steps: [{ down: [{ actionId: 'refresh_status', options: {} }], up: [] }],
+		// Info only - no press action. Values update automatically from the telemetry poll.
+		steps: [{ down: [], up: [] }],
 		feedbacks: [],
 	}
 

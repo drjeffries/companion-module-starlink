@@ -13,7 +13,6 @@ export type VariablesSchema = {
 	service_line_active: string
 	service_line_nickname: string
 	public_ip_enabled: string
-	public_ip_address: string
 
 	data_used_gb: string
 	data_used_standard_gb: string
@@ -27,9 +26,6 @@ export type VariablesSchema = {
 
 	router_id: string
 	router_nickname: string
-
-	latency_ms: string
-	beam_reliability: string
 
 	connection_status: string
 	last_poll_time: string
@@ -50,7 +46,6 @@ export function UpdateVariableDefinitions(self: ModuleInstance): void {
 		service_line_active: { name: 'Service line active (YES / NO)' },
 		service_line_nickname: { name: 'Service line nickname' },
 		public_ip_enabled: { name: 'Dedicated public IP setting enabled (YES / NO)' },
-		public_ip_address: { name: 'Active WAN public IP address (not exposed by API - see HELP)' },
 
 		data_used_gb: { name: 'Priority data used this billing cycle (GB)' },
 		data_used_standard_gb: { name: 'Standard (deprioritized) data used this cycle (GB)' },
@@ -64,9 +59,6 @@ export function UpdateVariableDefinitions(self: ModuleInstance): void {
 
 		router_id: { name: 'Default router ID' },
 		router_nickname: { name: 'Router nickname' },
-
-		latency_ms: { name: 'Round-trip latency, ms (N/A - not exposed by Public API v2)' },
-		beam_reliability: { name: 'Beam/signal reliability, % (N/A - not exposed by Public API v2)' },
 
 		connection_status: { name: 'Last poll result (OK / ERROR)' },
 		last_poll_time: { name: 'Timestamp of last telemetry poll' },
@@ -96,9 +88,6 @@ export function pushTelemetryVariables(self: ModuleInstance): void {
 		service_line_active: yesNo(t.serviceLineActive),
 		service_line_nickname: t.serviceLineNickname ?? 'N/A',
 		public_ip_enabled: yesNo(t.publicIpEnabled),
-		// The Public API only reports whether a dedicated public IP is enabled, never the literal
-		// address - it is not returned by any endpoint in the v2 spec.
-		public_ip_address: 'N/A (not exposed by Starlink API)',
 
 		data_used_gb: numOrNA(t.dataUsedPriorityGB),
 		data_used_standard_gb: numOrNA(t.dataUsedStandardGB),
@@ -112,9 +101,6 @@ export function pushTelemetryVariables(self: ModuleInstance): void {
 
 		router_id: t.routerId ?? self.config.routerId ?? 'N/A',
 		router_nickname: t.routerNickname ?? 'N/A',
-
-		latency_ms: numOrNA(t.latencyMs),
-		beam_reliability: numOrNA(t.beamReliabilityPercent, '%'),
 
 		connection_status: t.pollOk ? 'OK' : 'ERROR',
 		last_poll_time: t.lastPollIso ?? 'N/A',

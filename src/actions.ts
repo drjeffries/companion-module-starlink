@@ -3,7 +3,12 @@ import { StarlinkApiError } from './api.js'
 import { pollOnce } from './polling.js'
 
 export type ActionsSchema = {
-	arm_toggle: { options: Record<string, never> }
+	arm_toggle: {
+		options: {
+			durationSeconds: number
+			noAutoDisarm: boolean
+		}
+	}
 	disarm: { options: Record<string, never> }
 	refresh_status: { options: Record<string, never> }
 	list_data_products: { options: Record<string, never> }
@@ -12,19 +17,16 @@ export type ActionsSchema = {
 			serviceLineNumber: string
 			productId: string
 			count: number
-			confirm: boolean
 		}
 	}
 	reboot_dish: {
 		options: {
 			deviceId: string
-			confirm: boolean
 		}
 	}
 	reboot_router: {
 		options: {
 			routerId: string
-			confirm: boolean
 		}
 	}
 	set_public_ip: {
@@ -40,12 +42,11 @@ export type ActionsSchema = {
  * Every high-consequence write action MUST pass through this gate before touching the API:
  *   1. `enable_write_actions` must be turned on in the connection config (module-level kill switch).
  *   2. The safety interlock must currently be ARMED (see interlock.ts / the "Toggle Arm State" action).
- *   3. If the action requests confirmation, the button must be pressed twice within the
- *      confirmation window (see ConfirmGate in interlock.ts) - the first press only arms
- *      the pending confirmation and does not execute anything.
+ *   3. Optionally, a second press within the confirmation window (see ConfirmGate in
+ *      interlock.ts) - the first press only arms the pending confirmation and does not execute.
  * Returns true only when all applicable checks pass and the caller should proceed.
  */
-function guardWriteAction(self: ModuleInstance, label: string, confirmKey: string, requireConfirm: boolean): boolean {
+function guardWriteAction(self: ModuleInstance, label: string, confirmKey?: string): boolean {
 	if (!self.config.enableWriteActions) {
 		self.log(
 			'warn',
@@ -57,7 +58,7 @@ function guardWriteAction(self: ModuleInstance, label: string, confirmKey: strin
 		self.log('warn', `[SAFETY] "${label}" blocked: safety interlock is DISARMED. Press "Toggle Arm State" first.`)
 		return false
 	}
-	if (requireConfirm && !self.confirmGate.press(confirmKey)) {
+	if (confirmKey !== undefined && !self.confirmGate.press(confirmKey)) {
 		self.log(
 			'warn',
 			`[SAFETY] "${label}" requires confirmation - press the same button again within a few seconds to execute.`,
@@ -85,10 +86,30 @@ export function UpdateActions(self: ModuleInstance): void {
 	self.setActionDefinitions({
 		arm_toggle: {
 			name: 'Toggle Arm State',
-			description: `Arms the safety interlock for ${self.config.disarmTimeoutSeconds}s (auto-disarms itself), or disarms immediately if already armed.`,
-			options: [],
-			callback: async () => {
-				self.interlock.toggle(self.config.disarmTimeoutSeconds || 10)
+			description: `Arms the safety interlock (default ${self.config.disarmTimeoutSeconds}s auto-disarm, override below), or disarms immediately if already armed.`,
+			options: [
+				{
+					id: 'durationSeconds',
+					type: 'number',
+					label: `Arm duration, seconds (0 = use connection default: ${self.config.disarmTimeoutSeconds}s)`,
+					default: 0,
+					min: 0,
+					max: 3600,
+				},
+				{
+					id: 'noAutoDisarm',
+					type: 'checkbox',
+					label: 'Stay armed until manually disarmed (ignores duration above, no auto-disarm countdown)',
+					default: false,
+				},
+			],
+			callback: async (event) => {
+				const seconds = event.options.noAutoDisarm
+					? null
+					: event.options.durationSeconds > 0
+						? event.options.durationSeconds
+						: self.config.disarmTimeoutSeconds || 10
+				self.interlock.toggle(seconds)
 			},
 		},
 		disarm: {
@@ -137,7 +158,8 @@ export function UpdateActions(self: ModuleInstance): void {
 		},
 		top_up_data: {
 			name: 'Emergency Priority Data Top-Up',
-			description: 'ARMED + confirmation required. Adds a one-time priority data block to a service line.',
+			description:
+				'Requires the connection to be ARMED (see "Toggle Arm State"). Adds a one-time priority data block to a service line.',
 			options: [
 				{
 					id: 'serviceLineNumber',
@@ -160,12 +182,6 @@ export function UpdateActions(self: ModuleInstance): void {
 					min: 1,
 					max: 20,
 				},
-				{
-					id: 'confirm',
-					type: 'checkbox',
-					label: 'Require a second press to confirm',
-					default: true,
-				},
 			],
 			callback: async (event) => {
 				const serviceLineNumber = event.options.serviceLineNumber || self.config.serviceLineNumber
@@ -180,8 +196,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					self.log('error', 'Emergency Priority Data Top-Up: Product ID is required.')
 					return
 				}
-				const gateKey = `top_up:${event.controlId}`
-				if (!guardWriteAction(self, 'Emergency Priority Data Top-Up', gateKey, event.options.confirm)) return
+				if (!guardWriteAction(self, 'Emergency Priority Data Top-Up')) return
 				await runWrite(
 					self,
 					`Data top-up (${event.options.count}x ${event.options.productId} on ${serviceLineNumber})`,
@@ -195,19 +210,13 @@ export function UpdateActions(self: ModuleInstance): void {
 		},
 		reboot_dish: {
 			name: 'Remote Reboot Dish',
-			description: 'ARMED + confirmation required. Reboots the user terminal (dish).',
+			description: 'Requires the connection to be ARMED (see "Toggle Arm State"). Reboots the user terminal (dish).',
 			options: [
 				{
 					id: 'deviceId',
 					type: 'textinput',
 					label: 'User Terminal / Dish ID (blank = use connection default)',
 					default: '',
-				},
-				{
-					id: 'confirm',
-					type: 'checkbox',
-					label: 'Require a second press to confirm',
-					default: true,
 				},
 			],
 			callback: async (event) => {
@@ -216,26 +225,19 @@ export function UpdateActions(self: ModuleInstance): void {
 					self.log('error', 'Remote Reboot Dish: no User Terminal / Dish ID set (button option or connection default).')
 					return
 				}
-				const gateKey = `reboot_dish:${deviceId}`
-				if (!guardWriteAction(self, 'Remote Reboot Dish', gateKey, event.options.confirm)) return
+				if (!guardWriteAction(self, 'Remote Reboot Dish')) return
 				await runWrite(self, `Reboot dish ${deviceId}`, async () => self.api.rebootUserTerminal(deviceId))
 			},
 		},
 		reboot_router: {
 			name: 'Remote Reboot Router',
-			description: 'ARMED + confirmation required. Reboots the Starlink router.',
+			description: 'Requires the connection to be ARMED (see "Toggle Arm State"). Reboots the Starlink router.',
 			options: [
 				{
 					id: 'routerId',
 					type: 'textinput',
 					label: 'Router ID (blank = use connection default)',
 					default: '',
-				},
-				{
-					id: 'confirm',
-					type: 'checkbox',
-					label: 'Require a second press to confirm',
-					default: true,
 				},
 			],
 			callback: async (event) => {
@@ -244,8 +246,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					self.log('error', 'Remote Reboot Router: no Router ID set (button option or connection default).')
 					return
 				}
-				const gateKey = `reboot_router:${routerId}`
-				if (!guardWriteAction(self, 'Remote Reboot Router', gateKey, event.options.confirm)) return
+				if (!guardWriteAction(self, 'Remote Reboot Router')) return
 				await runWrite(self, `Reboot router ${routerId}`, async () => self.api.rebootRouter(routerId))
 			},
 		},
@@ -279,8 +280,8 @@ export function UpdateActions(self: ModuleInstance): void {
 					self.log('error', 'Set Dynamic Public IP: no Service Line Number set (button option or connection default).')
 					return
 				}
-				const gateKey = `set_public_ip:${serviceLineNumber}`
-				if (!guardWriteAction(self, 'Set Dynamic Public IP', gateKey, event.options.confirm)) return
+				const confirmKey = event.options.confirm ? `set_public_ip:${serviceLineNumber}` : undefined
+				if (!guardWriteAction(self, 'Set Dynamic Public IP', confirmKey)) return
 				await runWrite(self, `Set public IP=${event.options.enabled} on ${serviceLineNumber}`, async () =>
 					self.api.setPublicIp(serviceLineNumber, event.options.enabled),
 				)

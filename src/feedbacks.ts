@@ -21,14 +21,9 @@ export type FeedbacksSchema = {
 		type: 'boolean'
 		options: Record<string, never>
 	}
-	high_latency_alert: {
-		type: 'boolean'
-		options: { thresholdMs: number }
-	}
 }
 
 const ARMED_RED = 0xcc0000
-const ARMED_AMBER = 0xff9900
 const WARN_YELLOW = 0xffcc00
 const CRITICAL_RED = 0xcc0000
 const OK_GREEN = 0x00aa00
@@ -110,28 +105,6 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 			defaultStyle: { bgcolor: FAULT_RED, color: 0xffffff },
 			options: [],
 			callback: () => !self.telemetry.pollOk || self.telemetry.serviceLineActive === false,
-		},
-		high_latency_alert: {
-			name: 'High Latency / Signal Drop Alert',
-			description:
-				'True when latency exceeds the configured threshold. NOTE: the Public API v2 does not expose live latency, so this stays inactive unless a future bridge populates it - kept here so the feedback is ready to wire up.',
-			type: 'boolean',
-			defaultStyle: { bgcolor: ARMED_AMBER, color: 0x000000 },
-			options: [
-				{
-					id: 'thresholdMs',
-					type: 'number',
-					label: 'Latency threshold (ms)',
-					default: 100,
-					min: 1,
-					max: 5000,
-				},
-			],
-			callback: (feedback) => {
-				const ms = self.telemetry.latencyMs
-				if (ms === null) return false
-				return ms > feedback.options.thresholdMs
-			},
 		},
 	})
 }

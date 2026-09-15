@@ -2,13 +2,12 @@
  * Snapshot of the last successful (or failed) telemetry poll. Held on the instance and
  * read by variables.ts / feedbacks.ts so both stay in sync with a single fetch cycle.
  *
- * NOTE on latencyMs / beamReliabilityPercent: the Starlink PUBLIC API v2 (the cloud/OIDC
- * REST API this module talks to) does not expose live RF link telemetry - no ping latency,
- * obstruction percentage, or beam/signal quality for a dish. Those numbers only exist on
- * the dish's own local, unauthenticated gRPC interface on the LAN (typically 192.168.100.1),
- * which is a different protocol entirely and out of scope for a cloud-credentialed module.
- * These fields are kept in the schema (and wired into a variable + feedback) so a future
- * local-telemetry bridge can populate them; until then they stay null and read "N/A".
+ * The Starlink PUBLIC API v2 (the cloud/OIDC REST API this module talks to) is an
+ * account-management API - it does not expose live RF link telemetry (ping latency,
+ * obstruction, beam/signal quality). Those only exist on the dish's own local,
+ * unauthenticated interface on the LAN, a different protocol out of scope for this
+ * cloud-credentialed module, so this state intentionally only tracks fields the API
+ * actually returns.
  */
 export interface TelemetryState {
 	pollOk: boolean
@@ -36,11 +35,6 @@ export interface TelemetryState {
 
 	routerId: string | null
 	routerNickname: string | null
-
-	/** Not available from the Public API v2 - see file header. Always null unless externally bridged. */
-	latencyMs: number | null
-	/** Not available from the Public API v2 - see file header. Always null unless externally bridged. */
-	beamReliabilityPercent: number | null
 }
 
 export function createInitialTelemetryState(): TelemetryState {
@@ -65,7 +59,5 @@ export function createInitialTelemetryState(): TelemetryState {
 		dishSerialNumber: null,
 		routerId: null,
 		routerNickname: null,
-		latencyMs: null,
-		beamReliabilityPercent: null,
 	}
 }
