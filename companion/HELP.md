@@ -5,6 +5,19 @@ and routers via the Starlink Public API v2, with a safety-interlock arming syste
 stray button press during a live broadcast can't reboot the link or trigger a paid data
 top-up.
 
+## Subscription / account requirements
+
+- **The Starlink Public API is only available to Business/Enterprise-tier accounts**
+  (Business, Enterprise, Maritime, Aviation). It is not available on consumer **Residential**
+  or **Roam** plans - no set of credentials will make this module work on those.
+- **Emergency Priority Data Top-Up** additionally requires the target service line to be on
+  a data plan that supports top-ups (a metered/priority plan with a data pool). Starlink
+  itself rejects the request with an error on plans that don't support it (e.g. some
+  unlimited plans) - that's enforced server-side, not by this module.
+- **Live RF telemetry** (latency, obstruction, signal quality, public IP, alert feedbacks)
+  requires the **Device telemetry (View)** permission on the service account - see below.
+  Everything else in the module works without it.
+
 ## Getting an API application
 
 1. Log in to the Starlink Business admin portal.

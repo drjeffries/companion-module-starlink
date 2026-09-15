@@ -19,6 +19,14 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 	return [
 		{
 			type: 'static-text',
+			id: 'info-requirements',
+			width: 12,
+			label: 'Subscription Requirements',
+			value:
+				"The Starlink Public API is only available to Business/Enterprise-tier accounts (Business, Enterprise, Maritime, Aviation) - it is not available on consumer Residential or Roam plans, regardless of credentials. The Emergency Priority Data Top-Up action additionally requires the target service line to be on a data plan that supports top-ups (a metered/priority plan with a data pool); Starlink will reject the request with an error on plans that don't support it (e.g. some unlimited plans) - this is enforced by Starlink, not this module. Live RF telemetry (latency/obstruction/signal/public IP) needs the Device telemetry (View) permission on the service account - see Authentication below.",
+		},
+		{
+			type: 'static-text',
 			id: 'info-auth',
 			width: 12,
 			label: 'Authentication',
