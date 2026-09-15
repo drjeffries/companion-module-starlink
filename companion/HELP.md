@@ -29,10 +29,12 @@ top-up.
    configuration (Edit)**, and **Device telemetry (View)**. The last one is required for
    live latency/obstruction/signal/public-IP data (see below) - without it, those
    variables/feedbacks simply stay `N/A` while everything else keeps working.
-4. Note the **Service Line Number** (`SL-XXXXXX-XXXXX-XX`), **User Terminal ID** and
-   **Router ID** you want this connection to default to. You can find these on the admin
-   portal, or run the "List Available Data Top-Up Products" action (or watch the log after
-   connecting) to confirm the connection is authenticating correctly.
+4. Save the connection with just Client ID/Secret filled in, then find the **Service Line
+   Number** (`SL-XXXXXX-XXXXX-XX`), **User Terminal ID** and **Router ID** you want this
+   connection to default to by adding a button with the **"List Account Service Lines (log
+   only)"** and **"List User Terminals & Routers (log only)"** actions (or drag in their
+   ready-made presets from "Read-Only Utilities") and pressing them once - the IDs show up
+   in the Companion log. You can also find them on the Starlink Business admin portal.
 
 ## Polling and rate limits
 
@@ -129,6 +131,11 @@ stay inactive without it.
 - **Refresh Telemetry Now** - read-only, polls immediately.
 - **List Available Data Top-Up Products (log only)** - read-only, logs valid Product IDs
   for use in the Top-Up action.
+- **List Account Service Lines (log only)** - read-only, logs every service line's number,
+  nickname, and active status - use this to find your Default Service Line Number.
+- **List User Terminals & Routers (log only)** - read-only, logs every user terminal's ID
+  (plus nickname/serial numbers) and any routers bonded to it - use this to find your
+  Default User Terminal / Dish ID and Default Router ID.
 - **Emergency Priority Data Top-Up**, **Remote Reboot Dish**, **Remote Reboot Router** -
   require Enable Write Actions + ARMED; execute immediately on a single press once armed.
 - **Set Dynamic Public IP** - requires Enable Write Actions + ARMED, plus its own optional
@@ -139,5 +146,15 @@ stay inactive without it.
 The "Telemetry / Read-Only" section's status-display presets (Telemetry Display, Signal
 Health, Service Line Status, Data Usage, Public IP, Account Info, Router Status) are **info
 only** - pressing them does nothing; their text and colors update automatically as the
-connection polls in the background. "List Top-Up Products (log)" is the one exception in
-that section: it does run a (read-only) action when pressed.
+connection polls in the background. "List Top-Up Products (log)", "List Service Lines
+(log)", and "List Terminals & Routers (log)" are the exceptions in that section: they do
+run a (read-only) action when pressed.
+
+## Changing settings on an existing connection
+
+Config field **defaults** (e.g. Telemetry Poll Interval defaulting to 60s) only apply when
+you create a **new** connection. If you already added this connection before a default
+changed in a module update, your saved value doesn't change on its own - Companion never
+silently overwrites a value you (or an earlier version of the module) already saved. Open
+the connection's settings and change the field yourself if you want it to match the new
+default.

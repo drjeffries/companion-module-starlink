@@ -64,6 +64,18 @@ export interface StarlinkServiceLineResponseServiceResponse extends StarlinkServ
 	content: StarlinkServiceLineResponse | null
 }
 
+export interface StarlinkServiceLineResponsePaginated {
+	pageIndex: number
+	limit: number
+	isLastPage: boolean
+	results: StarlinkServiceLineResponse[] | null
+	totalCount: number
+}
+
+export interface StarlinkServiceLineResponsePaginatedServiceResponse extends StarlinkServiceResponse {
+	content: StarlinkServiceLineResponsePaginated | null
+}
+
 export interface StarlinkDataUsageDailyV2 {
 	date: string
 	priorityGB: number

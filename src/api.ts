@@ -7,6 +7,7 @@ import type {
 	StarlinkEnterpriseCacheSearchResponseServiceResponse,
 	StarlinkQueryDataUsageRequest,
 	StarlinkServiceLineDataUsageForBillingCyclesPaginatedServiceResponse,
+	StarlinkServiceLineResponsePaginatedServiceResponse,
 	StarlinkServiceLineResponseServiceResponse,
 	StarlinkServiceLineSetPublicIpRequest,
 	StarlinkServiceResponse,
@@ -171,6 +172,11 @@ export class StarlinkApiClient {
 
 	async getServiceLine(serviceLineNumber: string): Promise<StarlinkServiceLineResponseServiceResponse> {
 		return this.request('GET', `/public/v2/service-lines/${encodeURIComponent(serviceLineNumber)}`)
+	}
+
+	async listServiceLines(page = 0): Promise<StarlinkServiceLineResponsePaginatedServiceResponse> {
+		const qs = buildQuery({ page })
+		return this.request('GET', `/public/v2/service-lines${qs}`)
 	}
 
 	async queryDataUsage(

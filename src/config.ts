@@ -53,7 +53,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			width: 12,
 			label: 'Default Targets',
 			value:
-				'Defaults used by actions/variables/presets when a button does not override them. Service Line Numbers look like SL-XXXXXX-XXXXX-XX; User Terminal and Router IDs are found on the Starlink Business admin portal (Devices page) for the dish/router you want this connection to target.',
+				'Defaults used by actions/variables/presets when a button does not override them. To find the exact values for your account: save this connection with just Client ID/Secret filled in first, then add a button using this module\'s "List Account Service Lines (log only)" and "List User Terminals & Routers (log only)" actions (or drag in their ready-made presets from "Read-Only Utilities"). Press them once and check the Companion log (or your Starlink Business admin portal) for the IDs below.',
 		},
 		{
 			type: 'textinput',
@@ -61,6 +61,8 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'Default Service Line Number',
 			width: 6,
 			default: '',
+			tooltip:
+				'Format SL-XXXXXX-XXXXX-XX. Find it by running the "List Account Service Lines (log only)" action once connected and checking the Companion log, or on the Starlink Business admin portal.',
 		},
 		{
 			type: 'textinput',
@@ -68,6 +70,8 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'Default User Terminal / Dish ID',
 			width: 6,
 			default: '',
+			tooltip:
+				'The User Terminal ID (not the kit serial number printed on the box, or the dish serial number on the dish itself). Find it by running the "List User Terminals & Routers (log only)" action once connected and checking the Companion log, or on the Starlink Business admin portal.',
 		},
 		{
 			type: 'textinput',
@@ -75,6 +79,8 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'Default Router ID',
 			width: 6,
 			default: '',
+			tooltip:
+				'Find it by running the "List User Terminals & Routers (log only)" action once connected - each terminal in the log lists its bonded router(s) and their Router ID - or on the Starlink Business admin portal. Leave blank if this dish has no WiFi router bonded to it.',
 		},
 		{
 			type: 'number',

@@ -57,7 +57,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 					id: 'telemetry-utility-group',
 					type: 'simple',
 					name: 'Read-Only Utilities',
-					presets: ['list_topup_products'],
+					presets: ['list_topup_products', 'list_service_lines', 'list_user_terminals'],
 				},
 			],
 		},
@@ -330,6 +330,34 @@ export function UpdatePresets(self: ModuleInstance): void {
 			show_topbar: false,
 		},
 		steps: [{ down: [{ actionId: 'list_data_products', options: {} }], up: [] }],
+		feedbacks: [],
+	}
+
+	presets['list_service_lines'] = {
+		type: 'simple',
+		name: 'List Service Lines (log)',
+		style: {
+			text: 'List\nService Lines',
+			size: '14',
+			color: WHITE,
+			bgcolor: DARK_GREY,
+			show_topbar: false,
+		},
+		steps: [{ down: [{ actionId: 'list_service_lines', options: {} }], up: [] }],
+		feedbacks: [],
+	}
+
+	presets['list_user_terminals'] = {
+		type: 'simple',
+		name: 'List Terminals & Routers (log)',
+		style: {
+			text: 'List\nTerminals/Routers',
+			size: '14',
+			color: WHITE,
+			bgcolor: DARK_GREY,
+			show_topbar: false,
+		},
+		steps: [{ down: [{ actionId: 'list_user_terminals', options: {} }], up: [] }],
 		feedbacks: [],
 	}
 

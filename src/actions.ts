@@ -12,6 +12,8 @@ export type ActionsSchema = {
 	disarm: { options: Record<string, never> }
 	refresh_status: { options: Record<string, never> }
 	list_data_products: { options: Record<string, never> }
+	list_service_lines: { options: Record<string, never> }
+	list_user_terminals: { options: Record<string, never> }
 	top_up_data: {
 		options: {
 			serviceLineNumber: string
@@ -153,6 +155,64 @@ export function UpdateActions(self: ModuleInstance): void {
 					const message =
 						err instanceof StarlinkApiError ? err.message : err instanceof Error ? err.message : String(err)
 					self.log('error', `Failed to list data products: ${message}`)
+				}
+			},
+		},
+		list_service_lines: {
+			name: 'List Account Service Lines (log only)',
+			description:
+				'Read-only: fetches every service line on this account and writes Service Line Number, nickname, and active status to the Companion log, so you can find the value for "Default Service Line Number" in the config.',
+			options: [],
+			callback: async () => {
+				try {
+					const res = await self.api.listServiceLines()
+					const lines = res.content?.results ?? []
+					if (lines.length === 0) {
+						self.log('info', 'No service lines found on this account.')
+						return
+					}
+					for (const sl of lines) {
+						self.log(
+							'info',
+							`Service line: number="${sl.serviceLineNumber}" nickname="${sl.nickname ?? ''}" active=${sl.active}`,
+						)
+					}
+					if (res.content && !res.content.isLastPage) {
+						self.log('info', `...and more (showing first ${lines.length} of ${res.content.totalCount}).`)
+					}
+				} catch (err) {
+					const message =
+						err instanceof StarlinkApiError ? err.message : err instanceof Error ? err.message : String(err)
+					self.log('error', `Failed to list service lines: ${message}`)
+				}
+			},
+		},
+		list_user_terminals: {
+			name: 'List User Terminals & Routers (log only)',
+			description:
+				'Read-only: fetches every user terminal (dish) on this account, plus any routers bonded to each, and writes their IDs to the Companion log - so you can find the values for "Default User Terminal / Dish ID" and "Default Router ID" in the config.',
+			options: [],
+			callback: async () => {
+				try {
+					const res = await self.api.listUserTerminals()
+					const terminals = res.content?.results ?? []
+					if (terminals.length === 0) {
+						self.log('info', 'No user terminals found on this account.')
+						return
+					}
+					for (const ut of terminals) {
+						self.log(
+							'info',
+							`User terminal: id="${ut.userTerminalId}" nickname="${ut.nickname ?? ''}" kitSerial="${ut.kitSerialNumber}" serviceLine="${ut.serviceLineNumber ?? ''}"`,
+						)
+						for (const router of ut.routers) {
+							self.log('info', `  └ Router: id="${router.routerId}" nickname="${router.nickname ?? ''}"`)
+						}
+					}
+				} catch (err) {
+					const message =
+						err instanceof StarlinkApiError ? err.message : err instanceof Error ? err.message : String(err)
+					self.log('error', `Failed to list user terminals: ${message}`)
 				}
 			},
 		},

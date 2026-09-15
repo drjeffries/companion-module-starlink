@@ -48,7 +48,13 @@ Requires the service account to have the "Device telemetry, View" permission (se
 - [ ] Without the permission (or with it revoked): these fields fall back to `N/A`/inactive, and the rest of the connection (account, service line, data usage) keeps working - only a "live telemetry" warning appears in the log, not a hard connection failure
 - [ ] `High Latency Alert`, `Obstruction Alert`, `Thermal / Power Supply Alert`, `Point-of-Presence Change Alert`, `Data Overage Rate-Limited Alert`, `Alignment / Mount Alert` feedbacks trigger correctly when the corresponding condition is real (hard to force artificially - at minimum confirm they stay false/inactive under normal healthy conditions)
 
+## Discovery actions
+
+- [ ] `List Account Service Lines (log only)` logs every service line's number/nickname/active status
+- [ ] `List User Terminals & Routers (log only)` logs every terminal's ID plus any bonded router IDs
+- [ ] Both handle a zero-result account gracefully (logs "No ... found", doesn't error)
+
 ## Presets
 
 - [ ] Info-only presets (Telemetry Display, Signal Health, Service Line Status, Data Usage, Public IP, Account Info, Router Status) do nothing on press, but update live from polling
-- [ ] `List Top-Up Products (log)` logs real product IDs usable in the Top-Up preset's placeholder
+- [ ] `List Top-Up Products (log)`, `List Service Lines (log)`, `List Terminals & Routers (log)` all log real values usable elsewhere in the config/action options
