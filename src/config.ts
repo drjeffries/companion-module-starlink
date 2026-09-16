@@ -105,8 +105,7 @@ export function GetConfigFields(self: ModuleInstance): SomeCompanionConfigField[
 			max: 3600,
 			tooltip:
 				"Starlink API v2 rate limit: 250 requests/minute per account, shared across every integration using that account - this module makes ~6 requests per poll (5 management-API calls plus 1 telemetry cache call). 60s is a conservative default with headroom to spare; you can lower it, but Starlink itself recommends syncing to your own database rather than high-frequency polling of the management API, and the live telemetry values only refresh a few times a minute on Starlink's side regardless of how often you poll.",
-			description:
-				'Starlink API v2 allows 250 requests/minute per account (shared with any other integration on the account); this module uses ~6 requests per poll. Lower this if you want fresher data, but note Starlink recommends against high-frequency polling of the management API.',
+			description: 'Starlink allows 250 req/min per account (~6 used per poll). See the ? tooltip for details.',
 		},
 		{
 			type: 'number',
