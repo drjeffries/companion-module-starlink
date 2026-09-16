@@ -8,6 +8,8 @@ export type ModuleConfig = {
 	pollIntervalSeconds: number
 	enableWriteActions: boolean
 	disarmTimeoutSeconds: number
+	gaugeMaxDownloadMbps: number
+	gaugeMaxUploadMbps: number
 }
 
 /**
@@ -122,6 +124,34 @@ export function GetConfigFields(self: ModuleInstance): SomeCompanionConfigField[
 			label: 'Enable Write Actions (top-up, reboot, public IP)',
 			width: 6,
 			default: false,
+		},
+		{
+			type: 'static-text',
+			id: 'info-gauges',
+			width: 12,
+			label: 'Gauge Presets',
+			value:
+				"The Download/Upload gauge presets scale against the two fields below. Starlink's API does not expose a hard throughput ceiling for your specific dish hardware/plan, so these are your own expectation of peak speed, not a queried value - set them to whatever your plan/hardware actually tops out at. The defaults are a generic Business/Enterprise ballpark (Starlink publishes typical ranges of roughly 40-220 Mbps down / 8-25 Mbps up for Business plans; Maritime/Aviation/Priority plans can run higher).",
+		},
+		{
+			type: 'number',
+			id: 'gaugeMaxDownloadMbps',
+			label: 'Expected Peak Download (Mbps)',
+			width: 6,
+			default: 220,
+			min: 1,
+			max: 10000,
+			tooltip: 'Used only to scale the Download gauge preset - see "Gauge Presets" above.',
+		},
+		{
+			type: 'number',
+			id: 'gaugeMaxUploadMbps',
+			label: 'Expected Peak Upload (Mbps)',
+			width: 6,
+			default: 25,
+			min: 1,
+			max: 10000,
+			tooltip: 'Used only to scale the Upload gauge preset - see "Gauge Presets" above.',
 		},
 		{
 			type: 'static-text',

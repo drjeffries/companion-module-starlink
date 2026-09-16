@@ -70,7 +70,7 @@ export function UpdateVariableDefinitions(self: ModuleInstance): void {
 		data_used_gb: { name: 'Priority data used this billing cycle (GB)' },
 		data_used_standard_gb: { name: 'Standard (deprioritized) data used this cycle (GB)' },
 		data_cap_gb: { name: 'Recurring priority data allotment this cycle (GB)' },
-		data_used_percent: { name: 'Percent of recurring data allotment used' },
+		data_used_percent: { name: 'Percent of recurring data allotment used (plain number, no % sign)' },
 
 		device_id: { name: 'Default user terminal / dish ID' },
 		device_nickname: { name: 'User terminal nickname' },
@@ -81,9 +81,11 @@ export function UpdateVariableDefinitions(self: ModuleInstance): void {
 		router_nickname: { name: 'Router nickname' },
 
 		latency_ms: { name: 'Dish round-trip latency to Starlink PoP, ms (Telemetry API)' },
-		obstruction_percent: { name: 'Dish obstruction, % of time (Telemetry API)' },
-		signal_quality_percent: { name: 'Dish signal quality, % (Telemetry API)' },
-		ping_drop_rate_percent: { name: 'Dish ping drop rate to Starlink PoP, % (Telemetry API)' },
+		obstruction_percent: { name: 'Dish obstruction, % of time, 0-100 (Telemetry API, plain number, no % sign)' },
+		signal_quality_percent: { name: 'Dish signal quality, %, 0-100 (Telemetry API, plain number, no % sign)' },
+		ping_drop_rate_percent: {
+			name: 'Dish ping drop rate to Starlink PoP, %, 0-100 (Telemetry API, plain number, no % sign)',
+		},
 		downlink_mbps: { name: 'Dish downlink throughput, Mbps (Telemetry API)' },
 		uplink_mbps: { name: 'Dish uplink throughput, Mbps (Telemetry API)' },
 		terminal_uptime: { name: 'Dish uptime since last reboot (Telemetry API)' },
@@ -142,7 +144,7 @@ export function pushTelemetryVariables(self: ModuleInstance): void {
 		data_used_gb: numOrNA(t.dataUsedPriorityGB),
 		data_used_standard_gb: numOrNA(t.dataUsedStandardGB),
 		data_cap_gb: numOrNA(t.dataCapGB),
-		data_used_percent: numOrNA(t.dataUsedPercent, '%'),
+		data_used_percent: numOrNA(t.dataUsedPercent),
 
 		device_id: t.deviceId ?? self.config.deviceId ?? 'N/A',
 		device_nickname: t.deviceNickname ?? 'N/A',
@@ -153,9 +155,9 @@ export function pushTelemetryVariables(self: ModuleInstance): void {
 		router_nickname: t.routerNickname ?? 'N/A',
 
 		latency_ms: numOrNA(t.liveLatencyMs),
-		obstruction_percent: numOrNA(t.liveObstructionPercent, '%'),
-		signal_quality_percent: numOrNA(t.liveSignalQualityPercent, '%'),
-		ping_drop_rate_percent: numOrNA(t.livePingDropRatePercent, '%'),
+		obstruction_percent: numOrNA(t.liveObstructionPercent),
+		signal_quality_percent: numOrNA(t.liveSignalQualityPercent),
+		ping_drop_rate_percent: numOrNA(t.livePingDropRatePercent),
 		downlink_mbps: numOrNA(t.liveDownlinkMbps),
 		uplink_mbps: numOrNA(t.liveUplinkMbps),
 		terminal_uptime: uptimeOrNA(t.liveUptimeSeconds),

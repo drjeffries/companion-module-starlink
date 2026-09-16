@@ -120,10 +120,10 @@ same data for a remotely-deployed OB truck without needing LAN access to the dis
 | `account_number`, `account_name`, `region_code` | Account info |
 | `service_line_number`, `service_line_active`, `service_line_nickname` | Service line status |
 | `public_ip_enabled` | Whether a dedicated public IP is turned on for the service line |
-| `data_used_gb`, `data_used_standard_gb`, `data_cap_gb`, `data_used_percent` | Current billing cycle data usage |
+| `data_used_gb`, `data_used_standard_gb`, `data_cap_gb`, `data_used_percent` | Current billing cycle data usage (`data_used_percent` is a plain number, 0-100, no `%` sign) |
 | `device_id`, `device_nickname`, `kit_serial_number`, `dish_serial_number` | User terminal identity |
 | `router_id`, `router_nickname` | Router identity |
-| `latency_ms`, `obstruction_percent`, `signal_quality_percent`, `ping_drop_rate_percent` | Live dish RF link telemetry |
+| `latency_ms`, `obstruction_percent`, `signal_quality_percent`, `ping_drop_rate_percent` | Live dish RF link telemetry (plain numbers, 0-100 for the percent ones - no `%` sign, add one yourself in button text if you want it) |
 | `downlink_mbps`, `uplink_mbps`, `terminal_uptime`, `public_ip_address` | Live dish throughput/uptime/IP |
 | `alert_obstruction`, `alert_thermal`, `alert_pop_change`, `alert_software_update_pending`, `alert_data_overage`, `alert_alignment_issue` | Live dish alert flags (`YES`/`NO`/`N/A`) |
 | `router_uptime`, `router_internet_latency_ms`, `router_dish_latency_ms`, `router_clients` | Live router telemetry |
@@ -162,6 +162,29 @@ only** - pressing them does nothing; their text and colors update automatically 
 connection polls in the background. "List Top-Up Products (log)", "List Service Lines
 (log)", and "List Terminals & Routers (log)" are the exceptions in that section: they do
 run a (read-only) action when pressed.
+
+### Gauges
+
+The "Gauges" group adds seven info-only presets with a live colour-graded bar (green through
+red) plus the current number: **Download**, **Upload**, **Signal Quality**, **Obstruction**,
+**Ping Drop Rate**, **Latency**, and **Data Used**. Throughput and signal quality run green
+at the high end / red at the low end; obstruction, ping drop rate, latency and data used run
+the other way (green at 0, red at max), since for those a high number is the bad outcome.
+
+- **Download**/**Upload** scale against the **Expected Peak Download/Upload (Mbps)** config
+  fields, since Starlink's API doesn't expose a real throughput ceiling for your specific
+  plan/hardware - set those to match your actual plan (see the config panel for typical
+  ranges).
+- **Latency** uses a fixed 0-150ms scale (general LEO characteristic, not plan-dependent).
+- The rest are natural 0-100% scales.
+- All of them require the **Device telemetry, View** permission (same as the rest of live
+  telemetry above) to show real data; without it they'll sit at the low/empty end.
+
+These use a newer Companion button-graphics feature (colour-graded bar gauges) introduced in
+mid-2026. **If your Companion core predates that, each gauge preset automatically falls back
+to a plain colour-coded text button** instead - Companion picks whichever version it
+understands (see [Bitfocus's alternatives-preset](https://github.com/bitfocus/companion-module-base)
+support), so nothing breaks, it just won't look as fancy on an older install.
 
 ## Changing settings on an existing connection
 

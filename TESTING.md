@@ -63,3 +63,11 @@ Requires the service account to have the "Device telemetry, View" permission (se
 
 - [ ] Info-only presets (Telemetry Display, Signal Health, Service Line Status, Data Usage, Public IP, Account Info, Router Status) do nothing on press, but update live from polling
 - [ ] `List Top-Up Products (log)`, `List Service Lines (log)`, `List Terminals & Routers (log)` all log real values usable elsewhere in the config/action options
+
+## Gauge presets
+
+- [ ] On a Companion core that supports layered/gauge graphics: all 7 gauges (Download, Upload, Signal Quality, Obstruction, Ping Drop Rate, Latency, Data Used) render as a colour bar + live number, not the plain-text fallback
+- [ ] Download/Upload bars scale correctly against the config's Expected Peak Download/Upload values - try setting those unusually low and confirm the bar fills further for the same throughput
+- [ ] Obstruction/Ping Drop Rate/Data Used/Latency show green near 0 and red near their max; Download/Upload/Signal Quality show the reverse (red near 0, green near max)
+- [ ] On an older Companion core (or by temporarily downgrading `@companion-module/base` in a test build) the same presets fall back to plain colour-coded text buttons instead of failing to appear
+- [ ] With no Device telemetry permission / no device configured: gauges sit at their low/empty end rather than erroring
