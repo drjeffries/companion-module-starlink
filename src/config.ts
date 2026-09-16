@@ -2,7 +2,6 @@ import type { SomeCompanionConfigField } from '@companion-module/base'
 import type ModuleInstance from './main.js'
 
 export type ModuleConfig = {
-	clientId: string
 	serviceLineNumber: string
 	deviceId: string
 	routerId: string
@@ -11,8 +10,16 @@ export type ModuleConfig = {
 	disarmTimeoutSeconds: number
 }
 
-/** Config fields of type 'secret-text' are routed by Companion into a separate secrets store. */
+/**
+ * Config fields of type 'secret-text' are routed by Companion into a separate secrets store,
+ * which Companion's "export without secrets" option omits entirely. Client ID lives here (not
+ * in ModuleConfig) specifically so it's excluded from that kind of export alongside Client Secret.
+ * Note: Service Line/Terminal/Router IDs stay in ModuleConfig (see GetConfigFields) because they
+ * need to be dropdowns populated from the account - secret-text only supports plain text entry.
+ * That means those three IDs are NOT covered by "export without secrets" - see HELP.md.
+ */
 export type ModuleSecrets = {
+	clientId: string
 	clientSecret: string
 }
 
@@ -35,7 +42,7 @@ export function GetConfigFields(self: ModuleInstance): SomeCompanionConfigField[
 				"Create an API application under Account &gt; API keys on the Starlink Business portal to obtain a Client ID and Client Secret (OIDC client_credentials grant). These credentials are stored by Companion in this connection's configuration and are never logged by this module. Grant the service account, at minimum: Account information (View), Service plan (View/Edit), Device management (View), Device command and configuration (Edit), and Device telemetry (View) - the last one is required for live latency/obstruction/signal/public-IP data; without it those variables/feedbacks just stay N/A.",
 		},
 		{
-			type: 'textinput',
+			type: 'secret-text',
 			id: 'clientId',
 			label: 'Client ID',
 			width: 6,
@@ -54,7 +61,7 @@ export function GetConfigFields(self: ModuleInstance): SomeCompanionConfigField[
 			width: 12,
 			label: 'Default Targets',
 			value:
-				'Defaults used by actions/variables/presets when a button does not override them. These dropdowns are populated automatically from your account a few seconds after this connection first authenticates - if you\'re setting this up for the first time, save once with just Client ID/Secret filled in, then reopen this panel. You can also pick "Custom value" in a dropdown to type an ID directly, or press the "List Account Service Lines" / "List User Terminals & Routers" actions (also available as ready-made presets) at any time to refresh this list and log full details.',
+				'Defaults used by actions/variables/presets when a button does not override them. These dropdowns are populated automatically from your account a few seconds after this connection first authenticates - if you\'re setting this up for the first time, save once with just Client ID/Secret filled in, then reopen this panel. You can also pick "Custom value" in a dropdown to type an ID directly, or press the "List Account Service Lines" / "List User Terminals & Routers" actions (also available as ready-made presets) at any time to refresh this list and log full details. Note: unlike Client ID/Secret, these three IDs are ordinary config fields (required for the dropdowns to work) and are NOT removed by Companion\'s "export without secrets" option - scrub them manually before sharing an exported connection/page file.',
 		},
 		{
 			type: 'dropdown',

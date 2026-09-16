@@ -92,7 +92,7 @@ export class StarlinkApiClient {
 	}
 
 	private async fetchNewToken(): Promise<string> {
-		const clientId = this.self.config.clientId
+		const clientId = this.self.secrets.clientId
 		const clientSecret = this.self.secrets.clientSecret
 		if (!clientId || !clientSecret) {
 			throw new StarlinkApiError('Client ID / Client Secret are not configured for this connection', 0)

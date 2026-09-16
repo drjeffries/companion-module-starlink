@@ -37,6 +37,18 @@ top-up.
    & Routers (log only)"** actions (also available as ready-made presets under "Read-Only
    Utilities") to refresh it and log full details, then reopen this panel again.
 
+## Exporting connections/pages without secrets
+
+Companion's own export feature can omit secrets. **Client ID and Client Secret are both
+excluded** when you export without secrets, since this module stores both in Companion's
+secrets store, not its regular config. **Default Service Line Number, Default User
+Terminal / Dish ID, and Default Router ID are NOT excluded** - they have to live in regular
+config for their dropdowns (populated from your account) to work, and Companion's secrets
+store only supports plain text fields, not dropdowns. If you're sharing an exported
+connection or page (e.g. in a support request or a shared repo) and don't want your service
+line number or device/router IDs visible to whoever receives it, clear those three fields
+first or scrub them from the exported file by hand.
+
 ## Polling and rate limits
 
 Starlink API v2 allows **250 requests/minute per account**, shared across every integration

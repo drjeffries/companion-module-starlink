@@ -66,7 +66,7 @@ export default class ModuleInstance extends InstanceBase<ModuleSchema> {
 				'This connection is in READ-ONLY mode (Enable Write Actions is off). Telemetry stays active; top-up/reboot/public-IP actions will be blocked.',
 			)
 		}
-		if (!config.clientId || !secrets.clientSecret) {
+		if (!secrets.clientId || !secrets.clientSecret) {
 			this.updateStatus(InstanceStatus.BadConfig, 'Client ID / Client Secret are required')
 			return
 		}
@@ -87,7 +87,7 @@ export default class ModuleInstance extends InstanceBase<ModuleSchema> {
 		this.api.resetToken()
 		pushConfigVariables(this)
 
-		if (!config.clientId || !secrets.clientSecret) {
+		if (!secrets.clientId || !secrets.clientSecret) {
 			stopPolling(this)
 			this.updateStatus(InstanceStatus.BadConfig, 'Client ID / Client Secret are required')
 			return

@@ -11,6 +11,7 @@ live broadcast.
 - [ ] Client ID + Secret authenticate successfully (connection status goes green, not `Bad Config` / `Authentication Failure`)
 - [ ] Invalid credentials produce a clear error status/log line, not a silent hang
 - [ ] Token auto-refreshes after ~15 minutes without a visible hiccup (log shows one "OIDC token request" per ~15min, not on every poll)
+- [ ] Export this connection (or a page containing it) from Companion with "export without secrets" - confirm the resulting file has no Client ID/Client Secret, but still has the Service Line/Terminal/Router IDs in plain text (expected - see HELP.md)
 
 ## Read-only telemetry
 
