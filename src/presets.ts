@@ -44,14 +44,15 @@ function gaugeElements(opts: {
 	const highColor = worseWhenHigher ? CRITICAL_RED : OK_GREEN
 	const valueText = formatValueText(variableName, unit)
 
+	// x/y/width/height on these elements are percent-of-button (0-100), not pixels.
 	return [
-		{ type: 'box', x: 0, y: 0, width: 72, height: 72, color: BLACK },
+		{ type: 'box', x: 0, y: 0, width: 100, height: 100, color: BLACK },
 		{
 			type: 'text',
 			x: 0,
-			y: 3,
-			width: 72,
-			height: 13,
+			y: 4,
+			width: 100,
+			height: 16,
 			text: title,
 			fontsize: 11,
 			weight: 'bold',
@@ -62,9 +63,9 @@ function gaugeElements(opts: {
 		{
 			type: 'text',
 			x: 2,
-			y: 16,
-			width: 68,
-			height: 26,
+			y: 22,
+			width: 96,
+			height: 36,
 			text: valueText,
 			fontsize: 16,
 			fontsizeAllowShrink: true,
@@ -74,10 +75,10 @@ function gaugeElements(opts: {
 		},
 		{
 			type: 'gauge',
-			x: 6,
-			y: 56,
-			width: 60,
-			height: 10,
+			x: 8,
+			y: 76,
+			width: 84,
+			height: 16,
 			min,
 			max,
 			value: { isExpression: true, value: `$(starlink:${variableName})` },
