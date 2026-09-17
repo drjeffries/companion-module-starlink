@@ -62,15 +62,21 @@ don't have to dig through this file while tuning them:
   quality, public IP, and the alert flags (the Telemetry Cache API). 1 call per cycle
   (~4 req/min at default).
 
-Starlink API v2 allows **250 requests/minute per account**, shared across every integration
-using that account - not exclusive to this connection. At the defaults above that's roughly
-34 req/min combined, a small fraction of the budget - there's plenty of headroom to lower
-either interval further if you want. Starlink's own docs recommend against polling the
-management API at very high frequency, and the Telemetry Cache API's own refresh rate on
-Starlink's side isn't published, so going much below ~10-15s on the telemetry interval likely
-just re-reads the same cached snapshot rather than getting fresher data, though it's cheap
-enough against the rate limit to try. The bearer token endpoint has its own, stricter limit
-(1000 auths/15min per IP); this module caches and reuses tokens for their full 15-minute
+Starlink API v2 enforces a **single unified limit of 250 requests/minute per account**
+(per [starlink.readme.io/docs/rate-limits](https://starlink.readme.io/docs/rate-limits)) -
+there is no separate, larger quota for telemetry vs. management calls, and it's shared across
+every integration using that account, not exclusive to this connection. At the defaults above
+that's roughly 34 req/min combined, a small fraction of the budget - there's plenty of
+headroom to lower either interval further if you want. Starlink's own docs recommend syncing
+to your own database rather than polling frequently if you need low-latency/high-frequency
+access. Starlink's Telemetry *Stream* API docs additionally state that user terminal/router
+devices aggregate telemetry internally on a documented 15-second interval before it reaches
+Starlink's backend - the Telemetry *Cache* API this module actually polls draws from that same
+underlying pipeline but doesn't have its own separately documented refresh cadence, so going
+much below ~10-15s on the telemetry interval likely just re-reads the same snapshot rather
+than getting fresher data, though it's cheap enough against the rate limit to try. The bearer
+token endpoint has its own, stricter limit (1000 auths/15min per IP); this module caches and
+reuses tokens for their full 15-minute
 lifetime, so normal polling never comes close to that limit.
 
 ## Read-only by default
