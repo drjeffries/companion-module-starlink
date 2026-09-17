@@ -50,11 +50,12 @@ function gaugeElements(opts: {
 		{
 			type: 'text',
 			x: 0,
-			y: 4,
+			y: 3,
 			width: 100,
-			height: 16,
+			height: 20,
 			text: title,
-			fontsize: 11,
+			fontsize: 14,
+			fontsizeAllowShrink: true,
 			weight: 'bold',
 			halign: 'center',
 			valign: 'top',
@@ -63,11 +64,11 @@ function gaugeElements(opts: {
 		{
 			type: 'text',
 			x: 2,
-			y: 22,
+			y: 25,
 			width: 96,
-			height: 36,
+			height: 40,
 			text: valueText,
-			fontsize: 16,
+			fontsize: 22,
 			fontsizeAllowShrink: true,
 			halign: 'center',
 			valign: 'center',
@@ -75,10 +76,10 @@ function gaugeElements(opts: {
 		},
 		{
 			type: 'gauge',
-			x: 8,
-			y: 76,
-			width: 84,
-			height: 16,
+			x: 6,
+			y: 70,
+			width: 88,
+			height: 20,
 			min,
 			max,
 			value: { isExpression: true, value: `$(starlink:${variableName})` },
@@ -490,7 +491,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 
 	presets['gauge_signal_quality'] = gaugePreset({
 		name: 'Signal Quality Gauge (Info Only)',
-		title: 'SIGNAL QUALITY',
+		title: 'SIGNAL',
 		variableName: 'signal_quality_percent',
 		unit: '%',
 		min: 0,
@@ -513,7 +514,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 
 	presets['gauge_ping_drop'] = gaugePreset({
 		name: 'Ping Drop Rate Gauge (Info Only)',
-		title: 'PING DROP RATE',
+		title: 'PING DROP',
 		variableName: 'ping_drop_rate_percent',
 		unit: '%',
 		min: 0,
