@@ -207,7 +207,7 @@ function describeError(what: string, err: unknown): string {
 export function startPolling(self: ModuleInstance): void {
 	stopPolling(self)
 
-	const managementIntervalMs = Math.max(2, self.config.pollIntervalSeconds || 60) * 1000
+	const managementIntervalMs = Math.max(2, self.config.pollIntervalSeconds || 10) * 1000
 	void pollManagementOnce(self)
 	self.pollTimer = setInterval(() => {
 		void pollManagementOnce(self)

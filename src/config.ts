@@ -99,17 +99,25 @@ export function GetConfigFields(self: ModuleInstance): SomeCompanionConfigField[
 				'Populated from your account - see "Default Targets" above. Leave as "(none)" if this dish has no WiFi router bonded to it.',
 		},
 		{
+			type: 'static-text',
+			id: 'info-polling',
+			width: 12,
+			label: 'Starlink API Rate Limits (for reference)',
+			value:
+				"(1) 250 requests/minute per account, shared across every integration using that account, not just this connection. (2) The OAuth token endpoint allows 1000 authentications per 15 minutes per client IP - this module caches and reuses each token for its full ~15-minute lifetime, so this is essentially never a concern. (3) Starlink's own docs recommend against high-frequency polling of the management API specifically. (4) The Telemetry Cache API's internal refresh cadence isn't published by Starlink - polling much faster than the link's own reporting rate won't necessarily get you fresher numbers, though it's cheap against the rate limit either way. At the defaults below (10s management, 15s telemetry) this module uses roughly 34 requests/minute - well under budget.",
+		},
+		{
 			type: 'number',
 			id: 'pollIntervalSeconds',
 			label: 'Management Poll Interval (seconds)',
 			width: 6,
-			default: 60,
+			default: 10,
 			min: 2,
 			max: 3600,
 			tooltip:
-				'How often account/service-line/data-usage/device-identity are polled (up to 5 management-API calls per cycle). This data changes slowly, so 60s is a conservative default. Starlink API v2\'s rate limit is 250 requests/minute per account, shared across every integration using that account - see "Live Telemetry Poll Interval" below for the separate, faster-moving throughput/signal poll.',
+				'How often account/service-line/data-usage/device-identity are polled (up to 5 management-API calls per cycle - see "Starlink API Rate Limits" above). This data changes slowly, but 10s keeps it feeling current without meaningfully touching the 250 req/min budget (5 calls/10s ≈ 30 req/min). See "Live Telemetry Poll Interval" below for the separate, faster-moving throughput/signal poll.',
 			description:
-				'Slow-changing account/service-line/data-usage info. See "Live Telemetry Poll Interval" below for throughput/signal.',
+				'Slow-changing account/service-line/data-usage info (~30 req/min at the default). See below for throughput/signal.',
 		},
 		{
 			type: 'number',
@@ -121,7 +129,8 @@ export function GetConfigFields(self: ModuleInstance): SomeCompanionConfigField[
 			max: 3600,
 			tooltip:
 				'How often throughput/latency/obstruction/signal/alerts (the Telemetry Cache API - 1 request per cycle) are polled, independent of the Management Poll Interval above. Starlink does not publish how often this cache itself actually refreshes, so going below ~10-15s likely just re-reads the same snapshot rather than getting fresher data - but it costs almost nothing against the 250 req/min account-wide limit, so a low value is safe to try.',
-			description: 'Fast-moving throughput/latency/signal/alerts. Independent of the Management Poll Interval above.',
+			description:
+				'Fast-moving throughput/latency/signal/alerts (~4 req/min at the default). Independent of Management Poll Interval.',
 		},
 		{
 			type: 'number',

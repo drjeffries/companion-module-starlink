@@ -52,18 +52,21 @@ first or scrub them from the exported file by hand.
 ## Polling and rate limits
 
 This module polls on **two independent timers**, since account/service-line/data-usage
-information changes far more slowly than dish throughput and signal:
+information changes far more slowly than dish throughput and signal. The config panel has a
+**"Starlink API Rate Limits" reference block** listing the numbers below directly, so you
+don't have to dig through this file while tuning them:
 
-- **Management Poll Interval** (default 60s) - account, service line, data usage, user
-  terminal/router identity. Up to 5 management-API calls per cycle.
+- **Management Poll Interval** (default 10s) - account, service line, data usage, user
+  terminal/router identity. Up to 5 management-API calls per cycle (~30 req/min at default).
 - **Live Telemetry Poll Interval** (default 15s) - throughput, latency, obstruction, signal
-  quality, public IP, and the alert flags (the Telemetry Cache API). 1 call per cycle.
+  quality, public IP, and the alert flags (the Telemetry Cache API). 1 call per cycle
+  (~4 req/min at default).
 
 Starlink API v2 allows **250 requests/minute per account**, shared across every integration
 using that account - not exclusive to this connection. At the defaults above that's roughly
-5 req/min (management) + 4 req/min (telemetry) ≈ 9 req/min, a small fraction of the budget.
-You can lower either interval independently - Starlink's own docs recommend against polling
-the management API at high frequency, and the Telemetry Cache API's own refresh rate on
+34 req/min combined, a small fraction of the budget - there's plenty of headroom to lower
+either interval further if you want. Starlink's own docs recommend against polling the
+management API at very high frequency, and the Telemetry Cache API's own refresh rate on
 Starlink's side isn't published, so going much below ~10-15s on the telemetry interval likely
 just re-reads the same cached snapshot rather than getting fresher data, though it's cheap
 enough against the rate limit to try. The bearer token endpoint has its own, stricter limit
@@ -198,7 +201,7 @@ support), so nothing breaks, it just won't look as fancy on an older install.
 
 ## Changing settings on an existing connection
 
-Config field **defaults** (e.g. Management Poll Interval defaulting to 60s) only apply when
+Config field **defaults** (e.g. Management Poll Interval defaulting to 10s) only apply when
 you create a **new** connection. If you already added this connection before a default
 changed in a module update, your saved value doesn't change on its own - Companion never
 silently overwrites a value you (or an earlier version of the module) already saved. Open
