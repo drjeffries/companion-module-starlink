@@ -44,22 +44,25 @@ function gaugeElements(opts: {
 	const highColor = worseWhenHigher ? CRITICAL_RED : OK_GREEN
 	const valueText = formatValueText(variableName, unit)
 
-	// x/y/width/height on these elements are percent-of-button (0-100), not pixels.
+	// x/y/width/height on these elements are percent-of-button (0-100), not pixels. Text boxes use a
+	// deliberately huge nominal fontsize (100) with fontsizeAllowShrink - that guarantees the text
+	// always renders at the largest size its box actually allows, instead of guessing a fixed number
+	// that's either too small (fights the box) or too big (gets clamped for no visible reason).
 	return [
 		{ type: 'box', x: 0, y: 0, width: 100, height: 100, color: BLACK },
 		{
 			type: 'gauge',
-			x: 12,
-			y: 18,
-			width: 76,
-			height: 76,
+			x: 0,
+			y: 0,
+			width: 100,
+			height: 100,
 			min,
 			max,
 			value: { isExpression: true, value: `$(starlink:${variableName})` },
 			orientation: 'ring',
 			startAngle: 0,
 			endAngle: 360,
-			ringWidth: 16,
+			ringWidth: 20,
 			roundedEnds: true,
 			fillEnabled: true,
 			multiColour: true,
@@ -75,26 +78,27 @@ function gaugeElements(opts: {
 		// already communicates good/bad without reading a number. The value is secondary, below it.
 		{
 			type: 'text',
-			x: 8,
-			y: 24,
-			width: 84,
-			height: 36,
+			x: 25,
+			y: 10,
+			width: 50,
+			height: 50,
 			text: title,
-			fontsize: 30,
+			fontsize: 100,
 			fontsizeAllowShrink: true,
 			weight: 'bold',
+			font: 'companion-mono',
 			halign: 'center',
 			valign: 'center',
 			color: WHITE,
 		},
 		{
 			type: 'text',
-			x: 12,
-			y: 60,
-			width: 76,
-			height: 24,
+			x: 25,
+			y: 35,
+			width: 50,
+			height: 50,
 			text: valueText,
-			fontsize: 20,
+			fontsize: 100,
 			fontsizeAllowShrink: true,
 			halign: 'center',
 			valign: 'center',
