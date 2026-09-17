@@ -1,6 +1,6 @@
 import type ModuleInstance from './main.js'
 import { StarlinkApiError } from './api.js'
-import { pollOnce } from './polling.js'
+import { pollManagementOnce, pollTelemetryCacheOnce } from './polling.js'
 import { refreshServiceLines, refreshUserTerminalsAndRouters } from './discovery.js'
 
 export type ActionsSchema = {
@@ -81,7 +81,8 @@ async function runWrite(self: ModuleInstance, label: string, fn: () => Promise<u
 	} finally {
 		// Single-use arm: force a re-arm before another high-consequence action can fire.
 		self.interlock.disarm(`after executing "${label}"`)
-		void pollOnce(self)
+		void pollManagementOnce(self)
+		void pollTelemetryCacheOnce(self)
 	}
 }
 
@@ -127,10 +128,10 @@ export function UpdateActions(self: ModuleInstance): void {
 		refresh_status: {
 			name: 'Refresh Telemetry Now',
 			description:
-				'Read-only: immediately re-polls account/service line/device status instead of waiting for the next poll interval.',
+				'Read-only: immediately re-polls account/service line/device status and live telemetry, instead of waiting for their next poll interval.',
 			options: [],
 			callback: async () => {
-				await pollOnce(self)
+				await Promise.all([pollManagementOnce(self), pollTelemetryCacheOnce(self)])
 			},
 		},
 		list_data_products: {

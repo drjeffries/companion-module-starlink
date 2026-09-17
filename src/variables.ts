@@ -50,6 +50,10 @@ export type VariablesSchema = {
 	connection_status: string
 	last_poll_time: string
 	last_error: string
+
+	telemetry_status: string
+	telemetry_last_poll_time: string
+	telemetry_last_error: string
 }
 
 export function UpdateVariableDefinitions(self: ModuleInstance): void {
@@ -102,9 +106,13 @@ export function UpdateVariableDefinitions(self: ModuleInstance): void {
 		router_dish_latency_ms: { name: 'Router-to-dish latency, ms (Telemetry API)' },
 		router_clients: { name: 'Router connected client count (Telemetry API)' },
 
-		connection_status: { name: 'Last poll result (OK / ERROR)' },
-		last_poll_time: { name: 'Timestamp of last telemetry poll' },
-		last_error: { name: 'Last telemetry poll error, if any' },
+		connection_status: { name: 'Last management-API poll result (OK / ERROR)' },
+		last_poll_time: { name: 'Timestamp of last management-API poll' },
+		last_error: { name: 'Last management-API poll error, if any' },
+
+		telemetry_status: { name: 'Last live telemetry (throughput/signal/alerts) poll result (OK / ERROR)' },
+		telemetry_last_poll_time: { name: 'Timestamp of last live telemetry poll' },
+		telemetry_last_error: { name: 'Last live telemetry poll error, if any' },
 	})
 }
 
@@ -177,6 +185,10 @@ export function pushTelemetryVariables(self: ModuleInstance): void {
 		connection_status: t.pollOk ? 'OK' : 'ERROR',
 		last_poll_time: t.lastPollIso ?? 'N/A',
 		last_error: t.lastError ?? '',
+
+		telemetry_status: t.telemetryLastPollIso === null ? 'N/A' : t.telemetryPollOk ? 'OK' : 'ERROR',
+		telemetry_last_poll_time: t.telemetryLastPollIso ?? 'N/A',
+		telemetry_last_error: t.telemetryLastError ?? '',
 	})
 }
 

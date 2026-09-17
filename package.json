@@ -1,6 +1,6 @@
 {
 	"name": "starlink",
-	"version": "0.7.4",
+	"version": "0.8.0",
 	"main": "dist/main.js",
 	"type": "module",
 	"scripts": {

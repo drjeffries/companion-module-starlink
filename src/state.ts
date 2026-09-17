@@ -12,6 +12,12 @@ export interface TelemetryState {
 	lastPollIso: string | null
 	lastError: string | null
 
+	// The live telemetry cache (throughput/latency/obstruction/alerts) polls on its own,
+	// independent interval from the management-API fields above - see polling.ts.
+	telemetryPollOk: boolean
+	telemetryLastPollIso: string | null
+	telemetryLastError: string | null
+
 	accountNumber: string | null
 	accountName: string | null
 	regionCode: string | null
@@ -62,6 +68,9 @@ export function createInitialTelemetryState(): TelemetryState {
 		pollOk: false,
 		lastPollIso: null,
 		lastError: null,
+		telemetryPollOk: false,
+		telemetryLastPollIso: null,
+		telemetryLastError: null,
 		accountNumber: null,
 		accountName: null,
 		regionCode: null,

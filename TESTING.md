@@ -66,8 +66,17 @@ Requires the service account to have the "Device telemetry, View" permission (se
 
 ## Gauge presets
 
-- [ ] On a Companion core that supports layered/gauge graphics: all 7 gauges (Download, Upload, Signal Quality, Obstruction, Ping Drop Rate, Latency, Data Used) render as a colour bar + live number, not the plain-text fallback
-- [ ] Download/Upload bars scale correctly against the config's Expected Peak Download/Upload values - try setting those unusually low and confirm the bar fills further for the same throughput
+- [ ] On a Companion core that supports layered/gauge graphics: all 7 gauges (Download, Upload, Signal Quality, Obstruction, Ping Drop Rate, Latency, Data Used) render as a colour ring + live number, not the plain-text fallback
+- [ ] Title and value text are both legible at actual button size, not just in the editor's zoomed preview
+- [ ] Download/Upload rings scale correctly against the config's Expected Peak Download/Upload values - try setting those unusually low and confirm the ring fills further for the same throughput
 - [ ] Obstruction/Ping Drop Rate/Data Used/Latency show green near 0 and red near their max; Download/Upload/Signal Quality show the reverse (red near 0, green near max)
 - [ ] On an older Companion core (or by temporarily downgrading `@companion-module/base` in a test build) the same presets fall back to plain colour-coded text buttons instead of failing to appear
 - [ ] With no Device telemetry permission / no device configured: gauges sit at their low/empty end rather than erroring
+- [ ] After a module update changes a preset's layout, a button dragged from Presets *before* the update keeps its old appearance until deleted and re-dragged - confirm this is expected, not a bug
+
+## Independent poll intervals
+
+- [ ] `last_poll_time` (management) and `telemetry_last_poll_time` (live telemetry) advance on their own separate cadences, matching the Management/Live Telemetry Poll Interval config fields
+- [ ] Setting Live Telemetry Poll Interval much lower than Management Poll Interval (e.g. 5s vs 60s) updates the gauge presets/throughput variables noticeably faster than account/service-line variables
+- [ ] `connection_status`/`last_error` reflect management-API failures only; `telemetry_status`/`telemetry_last_error` reflect live-telemetry failures only - breaking one (e.g. revoking Device telemetry permission) doesn't flip the other
+- [ ] "Refresh Telemetry Now" forces an immediate poll of both cycles

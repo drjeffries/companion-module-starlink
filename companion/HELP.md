@@ -51,16 +51,24 @@ first or scrub them from the exported file by hand.
 
 ## Polling and rate limits
 
+This module polls on **two independent timers**, since account/service-line/data-usage
+information changes far more slowly than dish throughput and signal:
+
+- **Management Poll Interval** (default 60s) - account, service line, data usage, user
+  terminal/router identity. Up to 5 management-API calls per cycle.
+- **Live Telemetry Poll Interval** (default 15s) - throughput, latency, obstruction, signal
+  quality, public IP, and the alert flags (the Telemetry Cache API). 1 call per cycle.
+
 Starlink API v2 allows **250 requests/minute per account**, shared across every integration
-using that account - not exclusive to this connection. This module makes about 6 requests
-per poll cycle (5 management-API calls plus 1 telemetry cache call). The **Telemetry Poll
-Interval** field defaults to 60 seconds, which uses a small fraction of that budget and
-leaves headroom for other tools. You can lower it, but Starlink's own docs recommend against
-polling the management API at high frequency, and the live telemetry values themselves are
-only produced a few times a minute on Starlink's side regardless of how often you poll - so
-going much faster than 60s buys little. The bearer token endpoint has its own, stricter
-limit (1000 auths/15min per IP); this module caches and reuses tokens for their full
-15-minute lifetime, so normal polling never comes close to that limit.
+using that account - not exclusive to this connection. At the defaults above that's roughly
+5 req/min (management) + 4 req/min (telemetry) ≈ 9 req/min, a small fraction of the budget.
+You can lower either interval independently - Starlink's own docs recommend against polling
+the management API at high frequency, and the Telemetry Cache API's own refresh rate on
+Starlink's side isn't published, so going much below ~10-15s on the telemetry interval likely
+just re-reads the same cached snapshot rather than getting fresher data, though it's cheap
+enough against the rate limit to try. The bearer token endpoint has its own, stricter limit
+(1000 auths/15min per IP); this module caches and reuses tokens for their full 15-minute
+lifetime, so normal polling never comes close to that limit.
 
 ## Read-only by default
 
@@ -127,7 +135,8 @@ same data for a remotely-deployed OB truck without needing LAN access to the dis
 | `downlink_mbps`, `uplink_mbps`, `terminal_uptime`, `public_ip_address` | Live dish throughput/uptime/IP |
 | `alert_obstruction`, `alert_thermal`, `alert_pop_change`, `alert_software_update_pending`, `alert_data_overage`, `alert_alignment_issue` | Live dish alert flags (`YES`/`NO`/`N/A`) |
 | `router_uptime`, `router_internet_latency_ms`, `router_dish_latency_ms`, `router_clients` | Live router telemetry |
-| `connection_status`, `last_poll_time`, `last_error` | Poll diagnostics |
+| `connection_status`, `last_poll_time`, `last_error` | Management-API poll diagnostics (Management Poll Interval) |
+| `telemetry_status`, `telemetry_last_poll_time`, `telemetry_last_error` | Live telemetry poll diagnostics (Live Telemetry Poll Interval - see "Polling and rate limits") |
 
 ## Feedbacks
 
@@ -141,7 +150,8 @@ stay inactive without it.
 
 - **Toggle Arm State** / **Disarm (Panic)** - the safety interlock, with per-press duration
   override and an indefinite-arm option (see above).
-- **Refresh Telemetry Now** - read-only, polls immediately.
+- **Refresh Telemetry Now** - read-only, immediately polls both the management API and live
+  telemetry instead of waiting for their next (independent) poll interval.
 - **List Available Data Top-Up Products (log only)** - read-only, logs valid Product IDs
   for use in the Top-Up action.
 - **List Account Service Lines (log only)** - read-only, logs every service line's number,
@@ -165,7 +175,7 @@ run a (read-only) action when pressed.
 
 ### Gauges
 
-The "Gauges" group adds seven info-only presets with a live colour-graded bar (green through
+The "Gauges" group adds seven info-only presets with a live colour-graded ring (green through
 red) plus the current number: **Download**, **Upload**, **Signal Quality**, **Obstruction**,
 **Ping Drop Rate**, **Latency**, and **Data Used**. Throughput and signal quality run green
 at the high end / red at the low end; obstruction, ping drop rate, latency and data used run
@@ -180,7 +190,7 @@ the other way (green at 0, red at max), since for those a high number is the bad
 - All of them require the **Device telemetry, View** permission (same as the rest of live
   telemetry above) to show real data; without it they'll sit at the low/empty end.
 
-These use a newer Companion button-graphics feature (colour-graded bar gauges) introduced in
+These use a newer Companion button-graphics feature (colour-graded ring gauges) introduced in
 mid-2026. **If your Companion core predates that, each gauge preset automatically falls back
 to a plain colour-coded text button** instead - Companion picks whichever version it
 understands (see [Bitfocus's alternatives-preset](https://github.com/bitfocus/companion-module-base)
@@ -188,9 +198,16 @@ support), so nothing breaks, it just won't look as fancy on an older install.
 
 ## Changing settings on an existing connection
 
-Config field **defaults** (e.g. Telemetry Poll Interval defaulting to 60s) only apply when
+Config field **defaults** (e.g. Management Poll Interval defaulting to 60s) only apply when
 you create a **new** connection. If you already added this connection before a default
 changed in a module update, your saved value doesn't change on its own - Companion never
 silently overwrites a value you (or an earlier version of the module) already saved. Open
 the connection's settings and change the field yourself if you want it to match the new
-default.
+default. This also applies to newly-added fields (e.g. Live Telemetry Poll Interval) on an
+existing connection - the module falls back to a sensible default internally until you save
+the panel once, but the field won't show its named default value until then.
+
+**Presets are one-time templates, not live links.** Dragging a preset onto a button copies
+its definition at that moment; updating the module afterwards does not change buttons already
+on your grid. If a preset looks out of date (e.g. after a module update changes its layout),
+delete the button and drag a fresh copy from the Presets panel.

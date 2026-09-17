@@ -40,7 +40,12 @@ function sumRecurringAllotmentGB(
 	return total > 0 ? round2(total) : null
 }
 
-export async function pollOnce(self: ModuleInstance): Promise<void> {
+/**
+ * Polls the management-API endpoints (account, service line, data usage, user terminal, router
+ * identity) - everything except live RF telemetry. Runs on its own timer (Telemetry Poll Interval)
+ * separate from pollTelemetryCacheOnce() below, since these change far slower than throughput/signal.
+ */
+export async function pollManagementOnce(self: ModuleInstance): Promise<void> {
 	const { serviceLineNumber, deviceId, routerId } = self.config
 	const errors: string[] = []
 	const telemetry = self.telemetry
@@ -111,64 +116,12 @@ export async function pollOnce(self: ModuleInstance): Promise<void> {
 		}
 	}
 
-	if (deviceId || routerId) {
-		try {
-			const cacheRes = await self.api.queryTelemetryCache({
-				includeUserTerminals: !!deviceId,
-				userTerminalIds: deviceId ? [deviceId] : undefined,
-				includeRouters: !!routerId,
-				routerIds: routerId ? [routerId] : undefined,
-			})
-
-			const ut = deviceId ? cacheRes.content?.userTerminals?.[deviceId] : undefined
-			telemetry.liveLatencyMs = roundOrNull(ut?.popPingLatencyMsAvg)
-			telemetry.liveObstructionPercent = roundOrNull(ut?.obstructionPercentTime)
-			telemetry.liveSignalQualityPercent = percentOrNull(ut?.signalQuality)
-			telemetry.livePingDropRatePercent = percentOrNull(ut?.popPingDropRateAvg)
-			telemetry.liveDownlinkMbps = roundOrNull(ut?.downlinkThroughputMbps)
-			telemetry.liveUplinkMbps = roundOrNull(ut?.uplinkThroughputMbps)
-			telemetry.liveUptimeSeconds = ut?.uptimeSeconds ?? null
-			telemetry.livePublicIpAddress = ut?.ipAllocations?.ipv4?.length ? ut.ipAllocations.ipv4.join(', ') : null
-			telemetry.alertObstruction = anyAlert(ut?.alertHighTimeObstruction)
-			telemetry.alertThermal = anyAlert(ut?.alertPsuOtpThrottling)
-			telemetry.alertPopChange = anyAlert(ut?.alertPopChange)
-			telemetry.alertSoftwareUpdatePending = anyAlert(ut?.alertSoftwareUpdateRebootPending)
-			telemetry.alertDataOverage = anyAlert(ut?.alertDataOverageRateLimited)
-			telemetry.alertAlignmentIssue = anyAlert(
-				ut?.alertMastNotVertical,
-				ut?.alertActuatorMotorStuck,
-				ut?.alertUnableToAlign,
-			)
-
-			const rt = routerId ? cacheRes.content?.routers?.[routerId] : undefined
-			telemetry.routerUptimeSeconds = rt?.uptimeSeconds ?? null
-			telemetry.routerInternetLatencyMs = roundOrNull(rt?.internetPingLatencyMs)
-			telemetry.routerDishLatencyMs = roundOrNull(rt?.dishPingLatencyMs)
-			telemetry.routerClients = rt?.clients ?? null
-		} catch (err) {
-			// A 403 here almost always means the service account is missing the "Device telemetry,
-			// View" permission - the rest of the poll (account/service-line/data usage) is unaffected.
-			errors.push(describeError('live telemetry', err))
-		}
-	}
-
 	telemetry.lastPollIso = new Date().toISOString()
 	telemetry.pollOk = errors.length === 0
 	telemetry.lastError = errors.length > 0 ? errors.join(' | ') : null
 
 	pushTelemetryVariables(self)
-	self.checkFeedbacks(
-		'data_usage_warning',
-		'data_usage_critical',
-		'terminal_status_ok',
-		'terminal_status_fault',
-		'high_latency_alert',
-		'obstruction_alert',
-		'thermal_alert',
-		'pop_change_alert',
-		'data_overage_alert',
-		'alignment_alert',
-	)
+	self.checkFeedbacks('data_usage_warning', 'data_usage_critical', 'terminal_status_ok', 'terminal_status_fault')
 
 	if (errors.length > 0) {
 		self.log('warn', `Telemetry poll completed with errors: ${telemetry.lastError}`)
@@ -178,6 +131,74 @@ export async function pollOnce(self: ModuleInstance): Promise<void> {
 	}
 }
 
+/**
+ * Polls the live RF telemetry (Telemetry Cache API) - throughput, latency, obstruction, signal
+ * quality, public IP and the alert flags. Runs on its own, typically much faster, timer than
+ * pollManagementOnce() above, since throughput/signal are what people actually want to watch live.
+ */
+export async function pollTelemetryCacheOnce(self: ModuleInstance): Promise<void> {
+	const { deviceId, routerId } = self.config
+	const telemetry = self.telemetry
+
+	if (!deviceId && !routerId) return
+
+	try {
+		const cacheRes = await self.api.queryTelemetryCache({
+			includeUserTerminals: !!deviceId,
+			userTerminalIds: deviceId ? [deviceId] : undefined,
+			includeRouters: !!routerId,
+			routerIds: routerId ? [routerId] : undefined,
+		})
+
+		const ut = deviceId ? cacheRes.content?.userTerminals?.[deviceId] : undefined
+		telemetry.liveLatencyMs = roundOrNull(ut?.popPingLatencyMsAvg)
+		telemetry.liveObstructionPercent = roundOrNull(ut?.obstructionPercentTime)
+		telemetry.liveSignalQualityPercent = percentOrNull(ut?.signalQuality)
+		telemetry.livePingDropRatePercent = percentOrNull(ut?.popPingDropRateAvg)
+		telemetry.liveDownlinkMbps = roundOrNull(ut?.downlinkThroughputMbps)
+		telemetry.liveUplinkMbps = roundOrNull(ut?.uplinkThroughputMbps)
+		telemetry.liveUptimeSeconds = ut?.uptimeSeconds ?? null
+		telemetry.livePublicIpAddress = ut?.ipAllocations?.ipv4?.length ? ut.ipAllocations.ipv4.join(', ') : null
+		telemetry.alertObstruction = anyAlert(ut?.alertHighTimeObstruction)
+		telemetry.alertThermal = anyAlert(ut?.alertPsuOtpThrottling)
+		telemetry.alertPopChange = anyAlert(ut?.alertPopChange)
+		telemetry.alertSoftwareUpdatePending = anyAlert(ut?.alertSoftwareUpdateRebootPending)
+		telemetry.alertDataOverage = anyAlert(ut?.alertDataOverageRateLimited)
+		telemetry.alertAlignmentIssue = anyAlert(
+			ut?.alertMastNotVertical,
+			ut?.alertActuatorMotorStuck,
+			ut?.alertUnableToAlign,
+		)
+
+		const rt = routerId ? cacheRes.content?.routers?.[routerId] : undefined
+		telemetry.routerUptimeSeconds = rt?.uptimeSeconds ?? null
+		telemetry.routerInternetLatencyMs = roundOrNull(rt?.internetPingLatencyMs)
+		telemetry.routerDishLatencyMs = roundOrNull(rt?.dishPingLatencyMs)
+		telemetry.routerClients = rt?.clients ?? null
+
+		telemetry.telemetryPollOk = true
+		telemetry.telemetryLastError = null
+	} catch (err) {
+		// A 403 here almost always means the service account is missing the "Device telemetry,
+		// View" permission - the management poll (account/service-line/data usage) is unaffected.
+		telemetry.telemetryPollOk = false
+		telemetry.telemetryLastError = describeError('live telemetry', err)
+		self.log('warn', `Live telemetry poll failed: ${telemetry.telemetryLastError}`)
+	}
+
+	telemetry.telemetryLastPollIso = new Date().toISOString()
+
+	pushTelemetryVariables(self)
+	self.checkFeedbacks(
+		'high_latency_alert',
+		'obstruction_alert',
+		'thermal_alert',
+		'pop_change_alert',
+		'data_overage_alert',
+		'alignment_alert',
+	)
+}
+
 function describeError(what: string, err: unknown): string {
 	if (err instanceof StarlinkApiError) return `${what}: ${err.message}`
 	return `${what}: ${err instanceof Error ? err.message : String(err)}`
@@ -185,17 +206,27 @@ function describeError(what: string, err: unknown): string {
 
 export function startPolling(self: ModuleInstance): void {
 	stopPolling(self)
-	const intervalMs = Math.max(2, self.config.pollIntervalSeconds || 5) * 1000
-	// Fire one immediate poll so variables/feedbacks aren't stale/blank right after (re)config.
-	void pollOnce(self)
+
+	const managementIntervalMs = Math.max(2, self.config.pollIntervalSeconds || 60) * 1000
+	void pollManagementOnce(self)
 	self.pollTimer = setInterval(() => {
-		void pollOnce(self)
-	}, intervalMs)
+		void pollManagementOnce(self)
+	}, managementIntervalMs)
+
+	const telemetryIntervalMs = Math.max(2, self.config.telemetryPollIntervalSeconds || 15) * 1000
+	void pollTelemetryCacheOnce(self)
+	self.telemetryPollTimer = setInterval(() => {
+		void pollTelemetryCacheOnce(self)
+	}, telemetryIntervalMs)
 }
 
 export function stopPolling(self: ModuleInstance): void {
 	if (self.pollTimer) {
 		clearInterval(self.pollTimer)
 		self.pollTimer = null
+	}
+	if (self.telemetryPollTimer) {
+		clearInterval(self.telemetryPollTimer)
+		self.telemetryPollTimer = null
 	}
 }

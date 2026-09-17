@@ -35,6 +35,7 @@ export default class ModuleInstance extends InstanceBase<ModuleSchema> {
 	readonly confirmGate: ConfirmGate
 	readonly telemetry: TelemetryState = createInitialTelemetryState()
 	pollTimer: ReturnType<typeof setInterval> | null = null
+	telemetryPollTimer: ReturnType<typeof setInterval> | null = null
 
 	// Cached choices for the Default Service Line / Terminal / Router config dropdowns,
 	// populated by discovery.ts. Empty until the first successful fetch after init().
