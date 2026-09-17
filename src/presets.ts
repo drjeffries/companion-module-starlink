@@ -23,9 +23,9 @@ function formatValueText(variableName: string, unit: string): string {
 }
 
 /**
- * Builds the layered-button graphics (title + live value + colour-graded bar gauge) shared by all
- * "gauge" telemetry presets. The gauge's `value` is bound to a live Companion variable expression, so
- * it redraws automatically on every poll with no feedback callback needed.
+ * Builds the layered-button graphics (title + live value, overlaid on a radial ring gauge) shared by
+ * all "gauge" telemetry presets. The gauge's `value` is bound to a live Companion variable expression,
+ * so it redraws automatically on every poll with no feedback callback needed.
  *
  * `min`/`max` are plain numbers baked in at preset-build time (from config, for the throughput gauges),
  * not expressions - UpdatePresets() re-runs on every configUpdated(), so they stay in sync.
@@ -48,42 +48,18 @@ function gaugeElements(opts: {
 	return [
 		{ type: 'box', x: 0, y: 0, width: 100, height: 100, color: BLACK },
 		{
-			type: 'text',
-			x: 0,
-			y: 1,
-			width: 100,
-			height: 22,
-			text: title,
-			fontsize: 18,
-			fontsizeAllowShrink: true,
-			weight: 'bold',
-			halign: 'center',
-			valign: 'top',
-			color: WHITE,
-		},
-		{
-			type: 'text',
-			x: 2,
-			y: 23,
-			width: 96,
-			height: 51,
-			text: valueText,
-			fontsize: 40,
-			fontsizeAllowShrink: true,
-			halign: 'center',
-			valign: 'center',
-			color: WHITE,
-		},
-		{
 			type: 'gauge',
-			x: 6,
-			y: 76,
-			width: 88,
-			height: 18,
+			x: 12,
+			y: 18,
+			width: 76,
+			height: 76,
 			min,
 			max,
 			value: { isExpression: true, value: `$(starlink:${variableName})` },
-			orientation: 'horizontal',
+			orientation: 'ring',
+			startAngle: 0,
+			endAngle: 360,
+			ringWidth: 16,
 			roundedEnds: true,
 			fillEnabled: true,
 			multiColour: true,
@@ -93,6 +69,33 @@ function gaugeElements(opts: {
 				{ value: mid, color: WARN_YELLOW, gradient: true },
 				{ value: max, color: highColor, gradient: true },
 			],
+		},
+		{
+			type: 'text',
+			x: 0,
+			y: 0,
+			width: 100,
+			height: 16,
+			text: title,
+			fontsize: 24,
+			fontsizeAllowShrink: true,
+			weight: 'bold',
+			halign: 'center',
+			valign: 'top',
+			color: WHITE,
+		},
+		{
+			type: 'text',
+			x: 22,
+			y: 36,
+			width: 56,
+			height: 40,
+			text: valueText,
+			fontsize: 32,
+			fontsizeAllowShrink: true,
+			halign: 'center',
+			valign: 'center',
+			color: WHITE,
 		},
 	]
 }
