@@ -71,13 +71,16 @@ function gaugeElements(opts: {
 			],
 		},
 		{
+			// Height is deliberately generous (and overlaps the top of the ring below, which is fine -
+			// this element is drawn after the gauge, so it's on top) - a too-short box makes
+			// fontsizeAllowShrink scale the text down far below the requested fontsize.
 			type: 'text',
 			x: 0,
 			y: 0,
 			width: 100,
-			height: 16,
+			height: 26,
 			text: title,
-			fontsize: 24,
+			fontsize: 26,
 			fontsizeAllowShrink: true,
 			weight: 'bold',
 			halign: 'center',
@@ -86,12 +89,12 @@ function gaugeElements(opts: {
 		},
 		{
 			type: 'text',
-			x: 22,
-			y: 36,
-			width: 56,
-			height: 40,
+			x: 16,
+			y: 32,
+			width: 68,
+			height: 48,
 			text: valueText,
-			fontsize: 32,
+			fontsize: 40,
 			fontsizeAllowShrink: true,
 			halign: 'center',
 			valign: 'center',
