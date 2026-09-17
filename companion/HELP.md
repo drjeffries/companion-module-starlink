@@ -184,20 +184,32 @@ run a (read-only) action when pressed.
 
 ### Gauges
 
-The "Gauges" group adds seven info-only presets with a live colour-graded ring (green through
-red) plus the current number: **Download**, **Upload**, **Signal Quality**, **Obstruction**,
+The "Gauges" group adds seven info-only presets with a live colour-graded ring (green/yellow/
+red) plus the current number: **Download**, **Upload**, **Signal Quality**, **Obstruct**,
 **Ping Drop Rate**, **Latency**, and **Data Used**. Throughput and signal quality run green
 at the high end / red at the low end; obstruction, ping drop rate, latency and data used run
-the other way (green at 0, red at max), since for those a high number is the bad outcome.
+the other way (green at 0, red at max), since for those a high number is the bad outcome. All
+of them require the **Device telemetry, View** permission (same as the rest of live telemetry
+above) to show real data; without it they'll sit at the low/empty end.
 
-- **Download**/**Upload** scale against the **Expected Peak Download/Upload (Mbps)** config
-  fields, since Starlink's API doesn't expose a real throughput ceiling for your specific
-  plan/hardware - set those to match your actual plan (see the config panel for typical
-  ranges).
-- **Latency** uses a fixed 0-150ms scale (general LEO characteristic, not plan-dependent).
-- The rest are natural 0-100% scales.
-- All of them require the **Device telemetry, View** permission (same as the rest of live
-  telemetry above) to show real data; without it they'll sit at the low/empty end.
+Each ring's min/max and green/yellow/red breakpoints are deliberately narrowed to the range
+that's actually meaningful for that metric, instead of a naive 0-100% scale that would waste
+most of the ring on values that never realistically happen:
+
+| Gauge | Range | Green | Yellow | Red | Basis |
+| --- | --- | --- | --- | --- | --- |
+| Obstruct | 0-15% | 0-5% | 5-10% | 10-15%+ | Hand-tuned against this connection's own obstruction readings - serious degradation was observed well before 15%. |
+| Ping Drop Rate | 0-9% | 0-3% | 3-6% | 6-9%+ | General streaming/VoIP guidance: <1% good, 1-2.5% acceptable, 5-10% significantly impacts real-time quality. Starlink's typical steady-state is 0.2-0.6%, with brief ~1.4% micro-loss spikes at satellite handovers. |
+| Latency | 0-150ms | 0-50ms | 50-100ms | 100ms+ | Published Starlink performance guidance: ~20-60ms is typical/good, 60-100ms is "acceptable but noticeable," 100ms+ is degraded for real-time use. |
+| Data Used | 0-100% | 0-80% | 80-95% | 95-100% | Matches this module's own `data_usage_warning`/`data_usage_critical` feedback thresholds. |
+| Signal Quality | 0-100% | 66-100% | 33-66% | 0-33% | Full natural range - Starlink's API caps this metric at 0-10dB SNR mapped to 0-100%, so there's nothing to narrow. Starlink doesn't publish tier thresholds for it, so this uses even thirds. |
+| Download / Upload | 0-peak | top third | middle third | bottom third | Scaled against the **Expected Peak Download/Upload (Mbps)** config fields (see above) in even thirds - getting under a third of your expected peak is the "unusable" end of the scale. |
+
+Obstruction, ping drop rate, and latency numbers above come from general published Starlink/
+streaming performance guidance, not a single official Starlink spec page - treat them as a
+reasonable starting point and retune the gauge preset's own min/max/colour-stop fields in the
+button editor if your own observed numbers say otherwise (exactly how the Obstruct gauge's
+range was arrived at).
 
 These use a newer Companion button-graphics feature (colour-graded ring gauges) introduced in
 mid-2026. **If your Companion core predates that, each gauge preset automatically falls back

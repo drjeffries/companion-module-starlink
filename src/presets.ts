@@ -36,18 +36,24 @@ function gaugeElements(opts: {
 	unit: string
 	min: number
 	max: number
+	/** Where the green<->yellow and yellow<->red gradient stops sit (ascending values). The colour
+	 * holds solid from breakpoint2 to max, same as it holds solid from min to breakpoint1's gradient
+	 * start. For a "higher is better" metric the colour order is reversed (red sits at min instead). */
+	breakpoint1: number
+	breakpoint2: number
 	worseWhenHigher: boolean
 }): SomeButtonGraphicsElement[] {
-	const { title, variableName, unit, min, max, worseWhenHigher } = opts
-	const mid = min + (max - min) / 2
-	const lowColor = worseWhenHigher ? OK_GREEN : CRITICAL_RED
-	const highColor = worseWhenHigher ? CRITICAL_RED : OK_GREEN
+	const { title, variableName, unit, min, max, breakpoint1, breakpoint2, worseWhenHigher } = opts
+	const [startColor, midColor, endColor] = worseWhenHigher
+		? [OK_GREEN, WARN_YELLOW, CRITICAL_RED]
+		: [CRITICAL_RED, WARN_YELLOW, OK_GREEN]
 	const valueText = formatValueText(variableName, unit)
 
 	// x/y/width/height on these elements are percent-of-button (0-100), not pixels. Text boxes use a
 	// deliberately huge nominal fontsize (100) with fontsizeAllowShrink - that guarantees the text
 	// always renders at the largest size its box actually allows, instead of guessing a fixed number
-	// that's either too small (fights the box) or too big (gets clamped for no visible reason).
+	// that's either too small (fights the box) or too big (gets clamped for no visible reason). The
+	// title/value boxes are sized so they can't overlap (title ends at y53, value starts at y53).
 	return [
 		{ type: 'box', x: 0, y: 0, width: 100, height: 100, color: BLACK },
 		{
@@ -68,20 +74,20 @@ function gaugeElements(opts: {
 			multiColour: true,
 			trackStyle: 'dimmed',
 			stops: [
-				{ value: min, color: lowColor, gradient: true },
-				{ value: mid, color: WARN_YELLOW, gradient: true },
-				{ value: max, color: highColor, gradient: true },
+				{ value: min, color: startColor, gradient: true },
+				{ value: breakpoint1, color: midColor, gradient: true },
+				{ value: breakpoint2, color: endColor, gradient: true },
 			],
 		},
-		// Title is the dominant element, centered in the ring: at real Stream Deck size (~16mm key,
+		// Title is the dominant element, centered in the ring: at real Stream Deck key size (~16mm key,
 		// viewed from arm's length) it's what's actually legible at a glance - the ring's colour
 		// already communicates good/bad without reading a number. The value is secondary, below it.
 		{
 			type: 'text',
-			x: 25,
-			y: 10,
-			width: 50,
-			height: 50,
+			x: 0,
+			y: 16,
+			width: 100,
+			height: 37,
 			text: title,
 			fontsize: 100,
 			fontsizeAllowShrink: true,
@@ -93,10 +99,10 @@ function gaugeElements(opts: {
 		},
 		{
 			type: 'text',
-			x: 25,
-			y: 35,
-			width: 50,
-			height: 50,
+			x: 0,
+			y: 53,
+			width: 100,
+			height: 29,
 			text: valueText,
 			fontsize: 100,
 			fontsizeAllowShrink: true,
@@ -122,10 +128,13 @@ function gaugePreset(opts: {
 	unit: string
 	min: number
 	max: number
+	breakpoint1: number
+	breakpoint2: number
 	worseWhenHigher: boolean
 	fallbackFeedbacks?: SomePresetSimpleFeedbackEntry<ModuleSchema>[]
 }): CompanionSomePresetDefinition<ModuleSchema> {
-	const { name, title, variableName, unit, min, max, worseWhenHigher, fallbackFeedbacks } = opts
+	const { name, title, variableName, unit, min, max, breakpoint1, breakpoint2, worseWhenHigher, fallbackFeedbacks } =
+		opts
 	return {
 		type: 'alternatives',
 		variants: [
@@ -133,7 +142,7 @@ function gaugePreset(opts: {
 				type: 'layered',
 				name,
 				canvas: {},
-				elements: gaugeElements({ title, variableName, unit, min, max, worseWhenHigher }),
+				elements: gaugeElements({ title, variableName, unit, min, max, breakpoint1, breakpoint2, worseWhenHigher }),
 				steps: [{ down: [], up: [] }],
 				feedbacks: [],
 			},
@@ -479,13 +488,20 @@ export function UpdatePresets(self: ModuleInstance): void {
 	// text on older Companion cores - see gaugePreset()). Info only - no press action; the bar and
 	// number redraw automatically from the telemetry poll via variable expressions. Requires the
 	// "Device telemetry, View" permission on the service account - see HELP.
+	// Download/Upload: green/yellow/red at thirds of your configured expected peak - getting under a
+	// third of what you're paying for is the "unusable" end of the scale.
+	const downloadPeak = self.config.gaugeMaxDownloadMbps || 220
+	const uploadPeak = self.config.gaugeMaxUploadMbps || 25
+
 	presets['gauge_download'] = gaugePreset({
 		name: 'Download Gauge (Info Only)',
 		title: 'DOWNLOAD',
 		variableName: 'downlink_mbps',
 		unit: 'Mbps',
 		min: 0,
-		max: self.config.gaugeMaxDownloadMbps || 220,
+		max: downloadPeak,
+		breakpoint1: downloadPeak / 3,
+		breakpoint2: (downloadPeak * 2) / 3,
 		worseWhenHigher: false,
 	})
 
@@ -495,10 +511,15 @@ export function UpdatePresets(self: ModuleInstance): void {
 		variableName: 'uplink_mbps',
 		unit: 'Mbps',
 		min: 0,
-		max: self.config.gaugeMaxUploadMbps || 25,
+		max: uploadPeak,
+		breakpoint1: uploadPeak / 3,
+		breakpoint2: (uploadPeak * 2) / 3,
 		worseWhenHigher: false,
 	})
 
+	// Signal Quality is Starlink's own SNR-derived 0-100% metric (their API docs cap it at 0-10dB
+	// mapped to 0-1) - the full range is already meaningful, so no narrowing, just even thirds since
+	// Starlink doesn't publish specific tier thresholds for this derived percentage.
 	presets['gauge_signal_quality'] = gaugePreset({
 		name: 'Signal Quality Gauge (Info Only)',
 		title: 'SIGNAL',
@@ -506,41 +527,56 @@ export function UpdatePresets(self: ModuleInstance): void {
 		unit: '%',
 		min: 0,
 		max: 100,
+		breakpoint1: 33,
+		breakpoint2: 66,
 		worseWhenHigher: false,
 	})
 
+	// Obstruction: matches the connection's own hand-tuned reference button (min 0/max 15%, green->yellow
+	// at 5%, yellow->red at 10%) - real-world observation that serious degradation sets in well before
+	// 15%, so the naive 0-100% scale wasted almost the whole ring on obstruction levels that never happen.
 	presets['gauge_obstruction'] = gaugePreset({
 		name: 'Obstruction Gauge (Info Only)',
-		title: 'OBSTRUCTION',
+		title: 'OBSTRUCT',
 		variableName: 'obstruction_percent',
 		unit: '%',
 		min: 0,
-		max: 100,
+		max: 15,
+		breakpoint1: 5,
+		breakpoint2: 10,
 		worseWhenHigher: true,
 		fallbackFeedbacks: [
 			{ feedbackId: 'obstruction_alert', options: {}, style: { bgcolor: ALERT_AMBER, color: BLACK } },
 		],
 	})
 
+	// Ping Drop Rate: general streaming/VoIP guidance puts <1% as good, 1-2.5% as acceptable, and
+	// 5-10% as significantly impacting real-time quality; Starlink's own baseline is typically a
+	// 0.2-0.6% steady rate with brief ~1.4% micro-loss spikes at satellite handovers. 0-9% narrows the
+	// scale into that meaningful range instead of wasting most of a 0-100% ring.
 	presets['gauge_ping_drop'] = gaugePreset({
 		name: 'Ping Drop Rate Gauge (Info Only)',
 		title: 'PING DROP',
 		variableName: 'ping_drop_rate_percent',
 		unit: '%',
 		min: 0,
-		max: 100,
+		max: 9,
+		breakpoint1: 3,
+		breakpoint2: 6,
 		worseWhenHigher: true,
 	})
 
+	// Latency: matches published guidance - Starlink's typical/target range is ~20-60ms (good), 60-100ms
+	// is "acceptable but noticeable," and 100ms+ is degraded for real-time use.
 	presets['gauge_latency'] = gaugePreset({
 		name: 'Latency Gauge (Info Only)',
 		title: 'LATENCY',
 		variableName: 'latency_ms',
 		unit: 'ms',
-		// 0-150ms is a fixed, generic LEO-latency scale (not plan/hardware dependent like throughput),
-		// documented in HELP.md - typical healthy Starlink latency is roughly 20-60ms.
 		min: 0,
 		max: 150,
+		breakpoint1: 50,
+		breakpoint2: 100,
 		worseWhenHigher: true,
 		fallbackFeedbacks: [
 			{
@@ -551,6 +587,8 @@ export function UpdatePresets(self: ModuleInstance): void {
 		],
 	})
 
+	// Data Used: reuses the same 80%/95% breakpoints as the data_usage_warning/critical feedbacks
+	// elsewhere in this module, rather than inventing a separate scale for the same real threshold.
 	presets['gauge_data_used'] = gaugePreset({
 		name: 'Data Used Gauge (Info Only)',
 		title: 'DATA USED',
@@ -558,6 +596,8 @@ export function UpdatePresets(self: ModuleInstance): void {
 		unit: '%',
 		min: 0,
 		max: 100,
+		breakpoint1: 80,
+		breakpoint2: 95,
 		worseWhenHigher: true,
 		fallbackFeedbacks: [
 			{
